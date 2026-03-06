@@ -1,0 +1,20 @@
+# Node / frontend
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Logs and local runtime files
+*.log
+.env
+.env.*

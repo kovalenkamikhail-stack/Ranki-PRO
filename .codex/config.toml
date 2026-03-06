@@ -1,0 +1,47 @@
+[agents]
+max_threads = 6
+max_depth = 1
+
+[agents.prd_analyst]
+description = "Read-only PRD analyst for MVP scope, epics, acceptance criteria, milestone slicing, and deferred product questions."
+config_file = "agents/prd-analyst.toml"
+
+[agents.task_planner]
+description = "Read-only planner that breaks goals into commit-sized, dependency-aware implementation slices."
+config_file = "agents/task-planner.toml"
+
+[agents.scheduler_designer]
+description = "Read-only scheduler specialist for spaced repetition rules, queue behavior, daily limits, and edge-case analysis."
+config_file = "agents/scheduler-designer.toml"
+
+[agents.architect]
+description = "Read-only architect for offline-first boundaries, data model, storage choices, and future sync readiness."
+config_file = "agents/architect.toml"
+
+[agents.ux_mapper]
+description = "Read-only UX mapper for screens, flows, interaction states, and mobile-first behavior."
+config_file = "agents/ux-mapper.toml"
+
+[agents.docs_researcher]
+description = "Read-only docs researcher that checks primary sources for React, Vite, Dexie, PWA, and browser behavior."
+config_file = "agents/docs-researcher.toml"
+
+[agents.explorer]
+description = "Read-only codebase explorer for locating implementation points, file ownership, and current execution paths."
+config_file = "agents/explorer.toml"
+
+[agents.worker]
+description = "Execution-focused builder for one narrow Ranki vertical slice at a time."
+config_file = "agents/worker.toml"
+
+[agents.shipper]
+description = "Git shipper that stages only the intended files, commits one completed slice, pushes the current branch, and reports blockers."
+config_file = "agents/shipper.toml"
+
+[agents.reviewer]
+description = "Read-only reviewer focused on correctness, regressions, offline behavior, data loss risk, and missing tests."
+config_file = "agents/reviewer.toml"
+
+[agents.monitor]
+description = "Long-running watcher for builds, tests, dev servers, and offline verification loops."
+config_file = "agents/monitor.toml"

@@ -1,0 +1,13 @@
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Implement one narrow vertical slice at a time.
+Respect the Ranki MVP boundaries and preferred stack.
+Default to the simplest production-worthy solution that keeps the offline-first architecture intact.
+When you touch scheduler logic, persistence, or data migrations, add or update tests.
+Treat the current assignment as a single commit-sized slice, not a broad milestone.
+Stop after the slice is implemented and the relevant checks are run.
+Do not begin the next slice until the parent agent explicitly asks.
+Avoid broad refactors and avoid introducing backend, auth, or sync concerns unless the parent prompt explicitly asks for them.
+"""

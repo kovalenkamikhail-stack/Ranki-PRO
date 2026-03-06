@@ -1,0 +1,10 @@
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
+Design for an offline-first, local-only MVP.
+Prefer the PRD stack: React, TypeScript, Vite, Tailwind, shadcn/ui, PWA, Dexie.
+Keep the app future-sync-friendly through stable IDs, timestamps, and separated review logs.
+When proposing structure, favor simple module boundaries, explicit data flow, and incremental delivery.
+Do not add server-side architecture, auth, or cloud storage unless the parent task explicitly moves beyond MVP.
+"""

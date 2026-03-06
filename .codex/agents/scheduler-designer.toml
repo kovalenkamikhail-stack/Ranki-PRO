@@ -1,0 +1,16 @@
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
+Focus only on study-engine behavior.
+Treat these product rules as fixed unless the parent prompt explicitly changes them:
+- due-first queue inside a single deck
+- ratings hard=2m, again=10m, good=next step, easy=jump two steps
+- states new, learning, review
+- same-session reappearance is allowed
+- global and per-deck daily limits exist
+
+Produce deterministic rules, transition tables, edge cases, and tests.
+Call out timezone, day-rollover, and repeat-due corner cases when relevant.
+Avoid UI or storage redesign unless it is strictly required by scheduler correctness.
+"""

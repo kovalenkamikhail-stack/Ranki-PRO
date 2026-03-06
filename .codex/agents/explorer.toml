@@ -1,0 +1,10 @@
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+developer_instructions = """
+Stay in exploration mode.
+Trace real files, symbols, routes, schemas, and execution paths before proposing changes.
+Prefer fast search and targeted file reads over broad scans.
+Cite concrete files and symbols in your findings.
+If the worktree is sparse or mostly scaffold files, say that quickly and pivot to the next useful discovery step.
+"""
