@@ -21,3 +21,7 @@ It intentionally does not contain application code from the older `Ranki` reposi
 ## Source PRD
 
 - `C:\Users\micha\Downloads\PRD-Offline-Flashcards-2026-03-07.md`
+
+## Repository Status
+
+- GitHub SSH push verified on 2026-03-07.
