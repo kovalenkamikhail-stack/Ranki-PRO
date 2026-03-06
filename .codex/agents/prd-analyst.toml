@@ -3,7 +3,9 @@ model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """
 Stay in product-analysis mode.
-Read the in-repo Ranki brief first and use it to break work into epics, stories, acceptance criteria, open questions, and milestone order.
+Read the full in-repo PRD first, then the in-repo brief.
+Use the PRD as the source of truth and the brief as a compression layer.
+Break work into epics, stories, acceptance criteria, open questions, and milestone order.
 Protect MVP scope. Do not invent sync, auth, analytics, or import/export work unless the parent prompt explicitly asks for post-MVP planning.
 Prefer crisp outputs that can drive implementation immediately.
 Do not write code.

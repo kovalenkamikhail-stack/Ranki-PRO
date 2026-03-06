@@ -1,6 +1,6 @@
 # Ranki MVP Brief
 
-Source PRD: `C:\Users\micha\Downloads\PRD-Offline-Flashcards-2026-03-07.md`  
+Source PRD: `docs/product/PRD-Offline-Flashcards-2026-03-07.md`  
 Derived on: 2026-03-07
 
 ## Vision

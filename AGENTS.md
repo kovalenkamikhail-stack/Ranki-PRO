@@ -4,9 +4,10 @@
 
 - Ranki is an offline-first flashcards PWA for desktop browser and iPhone PWA use.
 - The product should feel calmer, cleaner, and more modern than classic Anki-like tools while preserving fast daily review workflows.
-- The working PRD source is `C:\Users\micha\Downloads\PRD-Offline-Flashcards-2026-03-07.md`.
+- The full in-repo source PRD lives at `docs/product/PRD-Offline-Flashcards-2026-03-07.md`.
 - The in-repo product brief lives at `docs/product/ranki-mvp-brief.md`.
-- If a task conflicts with the product brief, treat the brief as the source of truth unless the parent prompt explicitly overrides it.
+- Use the full PRD as the source of truth and the brief as a working summary.
+- If a task conflicts with the brief, the full PRD wins unless the parent prompt explicitly overrides it.
 
 ## MVP Boundaries
 

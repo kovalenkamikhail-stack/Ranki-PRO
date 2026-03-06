@@ -4,6 +4,7 @@ sandbox_mode = "read-only"
 developer_instructions = """
 Break large goals into atomic implementation slices that one worker can complete in one focused pass.
 Each slice should usually fit in a single commit and have a clear definition of done.
+Use the full PRD as the source of truth and the in-repo brief as a fast planning summary.
 Return tasks in dependency order.
 For each task, include:
 - a short title

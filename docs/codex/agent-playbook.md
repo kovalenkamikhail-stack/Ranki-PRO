@@ -12,8 +12,10 @@ This repository is configured for Codex multi-agent work.
   - Role-specific config layers for sub-agents.
 - `AGENTS.md`
   - Project-wide rules and product constraints.
+- `docs/product/PRD-Offline-Flashcards-2026-03-07.md`
+  - Full source PRD inside the repository.
 - `docs/product/ranki-mvp-brief.md`
-  - In-repo summary of the source PRD.
+  - In-repo working summary of the source PRD.
 
 ## Before Using In Codex App
 
@@ -41,7 +43,8 @@ This repository is configured for Codex multi-agent work.
 ### Product planning
 
 ```text
-Read docs/product/ranki-mvp-brief.md.
+Read docs/product/PRD-Offline-Flashcards-2026-03-07.md first.
+Then read docs/product/ranki-mvp-brief.md.
 Spawn prd_analyst, task_planner, scheduler_designer, architect, and ux_mapper.
 Wait for all of them, then produce:
 1. MVP epic breakdown
@@ -54,7 +57,7 @@ Wait for all of them, then produce:
 ### Atomic backlog creation
 
 ```text
-Read docs/product/ranki-mvp-brief.md and AGENTS.md.
+Read docs/product/PRD-Offline-Flashcards-2026-03-07.md, then docs/product/ranki-mvp-brief.md, then AGENTS.md.
 Use task_planner to break the current goal into atomic, dependency-ordered, commit-sized implementation tasks.
 Each task should include:
 - title
@@ -70,7 +73,7 @@ Then recommend the single best next slice to execute now.
 ### Initial scaffold
 
 ```text
-Read docs/product/ranki-mvp-brief.md and AGENTS.md.
+Read docs/product/PRD-Offline-Flashcards-2026-03-07.md, then docs/product/ranki-mvp-brief.md, then AGENTS.md.
 Spawn architect for the file layout and docs_researcher for any PWA or Dexie constraints.
 Then use worker to scaffold the MVP foundation with React, TypeScript, Vite, Tailwind, shadcn/ui, vite-plugin-pwa, and Dexie.
 Keep it local-only and offline-first.
@@ -95,7 +98,7 @@ Do not start another slice until commit and push succeed.
 ### Full slice loop
 
 ```text
-Read docs/product/ranki-mvp-brief.md and AGENTS.md.
+Read docs/product/PRD-Offline-Flashcards-2026-03-07.md, then docs/product/ranki-mvp-brief.md, then AGENTS.md.
 Use task_planner to choose the next smallest valuable slice.
 Use explorer only if codebase discovery is needed.
 Use worker to implement exactly one slice.
@@ -123,4 +126,5 @@ Summarize concrete findings only.
 - Avoid asking multiple write-capable agents to edit the same feature area at the same time.
 - There is no declarative workflow graph in `.codex/config.toml`; sequencing such as `worker -> shipper -> next slice` is enforced through role instructions and the parent prompt.
 - Keep prompts narrow. Multi-agent works best when each role has one clear job.
+- Keep the full PRD as the source of truth and the brief as the fast reference.
 - If the product brief changes, update `docs/product/ranki-mvp-brief.md` before relying on it.

@@ -7,7 +7,8 @@ Clean start for the next-generation Ranki project.
 This repository currently contains:
 
 - Codex multi-agent project setup
-- product brief derived from the PRD
+- the full source PRD
+- a product brief derived from the PRD
 - planning and execution playbook
 
 It intentionally does not contain application code from the older `Ranki` repository.
@@ -20,7 +21,8 @@ It intentionally does not contain application code from the older `Ranki` reposi
 
 ## Source PRD
 
-- `C:\Users\micha\Downloads\PRD-Offline-Flashcards-2026-03-07.md`
+- `docs/product/PRD-Offline-Flashcards-2026-03-07.md`
+- `docs/product/ranki-mvp-brief.md`
 
 ## Repository Status
 
