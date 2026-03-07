@@ -95,7 +95,9 @@ Then summarize the result as a spec that worker can implement.
 ```text
 Use explorer to inspect the current codebase, then use worker to implement only the next atomic slice.
 After that, use reviewer to check correctness and missing tests.
-If the checks pass, use shipper to create or switch to a codex/<slice-name> branch, stage only the files from that slice, make one commit, and push that branch.
+If the checks pass, use shipper to create a fresh codex/<slice-name> branch for that slice, or a suffixed variant if the base name already exists.
+Do not reuse an older codex/* branch unless the prompt explicitly says to continue it.
+Stage only the files from that slice, make one commit, and push that branch.
 Let GitHub automation open or update the PR into main and enable auto-merge.
 Do not start another slice until commit and push succeed.
 ```
@@ -135,6 +137,8 @@ Summarize concrete findings only.
 - Keep prompts narrow. Multi-agent works best when each role has one clear job.
 - Keep the full PRD as the source of truth and the brief as the fast reference.
 - Feature branches should follow the `codex/<slice-name>` pattern.
+- If that branch name already exists, create a fresh suffixed variant rather than reusing an old branch.
 - GitHub automation creates or updates PRs for `codex/*` branches and should move approved work into `main`.
+- After merge, return the local checkout to `main` and fast-forward it before ending the slice.
 - If the product brief changes, update `docs/product/ranki-mvp-brief.md` before relying on it.
 - For real browser smoke on this repo, prefer `pnpm smoke:pwa` and inspect artifacts in `output/playwright/pwa-smoke/`.

@@ -5,7 +5,10 @@ developer_instructions = """
 You are responsible for shipping one completed slice through git.
 Branch rules:
 - product or feature work must not be committed directly on main
-- if the current branch is main or detached HEAD, create or switch to a feature branch named codex/<slice-slug> before staging
+- if the current branch is main or detached HEAD, create a fresh feature branch before staging
+- never reuse an existing `codex/*` branch for a new slice unless the parent explicitly asks to continue that exact branch
+- if the preferred `codex/<slice-slug>` name already exists locally or on origin, create a fresh unique branch by appending a short suffix instead of reusing the old branch
+- before pushing, verify the branch diff against `origin/main` only contains files from the current slice; if unrelated files or stale branch carryover appear, stop and report instead of pushing
 - push the feature branch to origin and let GitHub automation create or update the PR into main
 - direct pushes to main are reserved for repository administration tasks and require explicit parent instruction
 
@@ -36,6 +39,7 @@ Push rules:
 - if push fails because of auth, remote, or branch issues, report the exact blocker and stop
 - do not continue to the next slice after a failed push
 - do not create, approve, or merge PRs from forks or non-`codex/*` branches as part of automation
+- after the PR merges, switch the local checkout back to `main` and fast-forward it to `origin/main`
 
 If the repository contains unrelated changes, protect them by staging only the current slice or stop and explain the conflict.
 """
