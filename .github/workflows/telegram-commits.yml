@@ -4,22 +4,34 @@ on:
   push:
     branches:
       - main
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - closed
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   notify:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      (
+        github.event_name == 'pull_request_target' &&
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.base.ref == 'main'
+      )
     steps:
-      - name: Send Telegram notifications for pushed commits
+      - name: Send Telegram notifications for main updates
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          COMMITS_JSON: ${{ toJson(github.event.commits) }}
-          REPO: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
-          COMPARE_URL: ${{ github.event.compare }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
         run: |
           python - <<'PY'
           import json
@@ -30,15 +42,34 @@ jobs:
 
           token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
           chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+          github_token = os.environ.get("GITHUB_TOKEN", "").strip()
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "").strip()
+          event_path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
 
           if not token or not chat_id:
               print("Telegram secrets are not configured. Skipping notification.")
               sys.exit(0)
 
-          commits = json.loads(os.environ.get("COMMITS_JSON") or "[]")
-          repo = os.environ.get("REPO", "")
-          branch = os.environ.get("BRANCH", "")
-          compare_url = os.environ.get("COMPARE_URL", "")
+          if not event_path:
+              print("Missing GITHUB_EVENT_PATH. Skipping notification.")
+              sys.exit(0)
+
+          with open(event_path, "r", encoding="utf-8") as handle:
+              event = json.load(handle)
+
+          repo = event.get("repository", {}).get("full_name", "")
+
+          def github_get(url: str):
+              headers = {
+                  "Accept": "application/vnd.github+json",
+                  "User-Agent": "ranki-pro-telegram-workflow",
+              }
+              if github_token:
+                  headers["Authorization"] = f"Bearer {github_token}"
+
+              request = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(request) as response:
+                  return json.load(response)
 
           def send_message(text: str) -> None:
               data = urllib.parse.urlencode(
@@ -55,42 +86,128 @@ jobs:
               ) as response:
                   response.read()
 
-          for commit in commits:
-              sha = commit.get("id", "")[:7]
-              author = commit.get("author", {}).get("name", "unknown")
-              message = commit.get("message", "").strip()
-              first_line = message.splitlines()[0] if message else "(no message)"
-              url = commit.get("url", "")
+          def format_files(files):
+              if not files:
+                  return "(no file list provided)"
 
-              files = []
-              for path in commit.get("added", []):
-                  files.append(f"+ {path}")
-              for path in commit.get("modified", []):
-                  files.append(f"~ {path}")
-              for path in commit.get("removed", []):
-                  files.append(f"- {path}")
+              shown = files[:20]
+              files_block = "\n".join(shown)
+              if len(files) > 20:
+                  files_block += f"\n... and {len(files) - 20} more"
+              return files_block
 
-              if files:
-                  shown = files[:20]
-                  files_block = "\n".join(shown)
-                  if len(files) > 20:
-                      files_block += f"\n... and {len(files) - 20} more"
-              else:
-                  files_block = "(no file list provided)"
+          def commit_has_merged_pr(commit_sha: str) -> bool:
+              if not repo or not commit_sha:
+                  return False
+
+              try:
+                  prs = github_get(
+                      f"https://api.github.com/repos/{repo}/commits/{commit_sha}/pulls"
+                  )
+              except Exception as error:
+                  print(f"Failed to inspect PR association for {commit_sha}: {error}")
+                  return False
+
+              for pr in prs:
+                  if pr.get("merged_at") and pr.get("base", {}).get("ref") == "main":
+                      return True
+
+              return False
+
+          if event_name == "push":
+              commits = event.get("commits") or []
+              branch = event.get("ref", "").split("/")[-1]
+              compare_url = event.get("compare", "")
+
+              for commit in commits:
+                  sha = commit.get("id", "")
+                  if commit_has_merged_pr(sha):
+                      print(f"Skipping push notification for merge commit {sha[:7]}.")
+                      continue
+
+                  author = commit.get("author", {}).get("name", "unknown")
+                  message = commit.get("message", "").strip()
+                  first_line = message.splitlines()[0] if message else "(no message)"
+                  url = commit.get("url", "")
+
+                  files = []
+                  for path in commit.get("added", []):
+                      files.append(f"+ {path}")
+                  for path in commit.get("modified", []):
+                      files.append(f"~ {path}")
+                  for path in commit.get("removed", []):
+                      files.append(f"- {path}")
+
+                  text = "\n".join(
+                      [
+                          f"Repo: {repo}",
+                          f"Branch: {branch}",
+                          f"Commit: {sha[:7]}",
+                          f"Author: {author}",
+                          f"Message: {first_line}",
+                          "Files:",
+                          format_files(files),
+                          f"Commit URL: {url}",
+                          f"Compare: {compare_url}",
+                      ]
+                  )
+
+                  send_message(text)
+
+          elif event_name == "pull_request_target":
+              pr = event.get("pull_request") or {}
+              if not pr.get("merged") or pr.get("base", {}).get("ref") != "main":
+                  print("Pull request event is not a merged PR into main. Skipping.")
+                  sys.exit(0)
+
+              pr_number = event.get("number")
+              head_ref = pr.get("head", {}).get("ref", "")
+              merge_commit_sha = pr.get("merge_commit_sha", "") or ""
+              merged_by = (pr.get("merged_by") or {}).get("login", "unknown")
+              title = (pr.get("title") or "").strip() or "(no title)"
+              pr_url = pr.get("html_url", "")
+              files_api_url = pr.get("url", "") + "/files"
+
+              file_items = []
+              if files_api_url:
+                  try:
+                      files_response = github_get(files_api_url)
+                      for file_item in files_response[:20]:
+                          status = file_item.get("status", "modified")
+                          prefix = {
+                              "added": "+",
+                              "modified": "~",
+                              "removed": "-",
+                              "renamed": "R",
+                          }.get(status, "~")
+                          filename = file_item.get("filename", "(unknown file)")
+                          file_items.append(f"{prefix} {filename}")
+                  except Exception as error:
+                      print(f"Failed to fetch PR files for #{pr_number}: {error}")
+
+              commit_url = (
+                  f"https://github.com/{repo}/commit/{merge_commit_sha}"
+                  if repo and merge_commit_sha
+                  else ""
+              )
 
               text = "\n".join(
                   [
                       f"Repo: {repo}",
-                      f"Branch: {branch}",
-                      f"Commit: {sha}",
-                      f"Author: {author}",
-                      f"Message: {first_line}",
+                      "Branch: main",
+                      f"PR: #{pr_number}",
+                      f"Head Branch: {head_ref}",
+                      f"Merge Commit: {merge_commit_sha[:7] if merge_commit_sha else '(unknown)'}",
+                      f"Merged By: {merged_by}",
+                      f"Message: {title}",
                       "Files:",
-                      files_block,
-                      f"Commit URL: {url}",
-                      f"Compare: {compare_url}",
+                      format_files(file_items),
+                      f"PR URL: {pr_url}",
+                      f"Commit URL: {commit_url}",
                   ]
               )
 
               send_message(text)
+          else:
+              print(f"Unsupported event: {event_name}. Skipping.")
           PY
