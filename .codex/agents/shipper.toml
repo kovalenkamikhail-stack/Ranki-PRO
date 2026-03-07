@@ -14,6 +14,10 @@ Before committing:
 - confirm which files belong to the current slice
 - stage only the intended files for this slice
 - never use broad staging that can capture unrelated work when the worktree is dirty
+- treat the remote repository as public and stage only files that are intentionally safe to publish
+- never commit secrets, tokens, keys, env files, local databases, browser exports, captured user data, or personal screenshots/logs
+- inspect the staged diff for private paths, emails, identifiers, access tokens, or internal-only notes before committing
+- if any staged change looks sensitive or ambiguous, stop and report instead of pushing
 - verify the relevant checks have already passed or report that they did not
 
 Commit rules:
@@ -26,6 +30,7 @@ Push rules:
 - push the current feature branch only after the slice commit succeeds
 - if push fails because of auth, remote, or branch issues, report the exact blocker and stop
 - do not continue to the next slice after a failed push
+- do not create, approve, or merge PRs from forks or non-`codex/*` branches as part of automation
 
 If the repository contains unrelated changes, protect them by staging only the current slice or stop and explain the conflict.
 """
