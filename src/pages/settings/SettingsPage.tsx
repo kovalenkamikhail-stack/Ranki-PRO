@@ -142,8 +142,8 @@ export function SettingsPage() {
             review history, and settings.
           </p>
           <p>
-            The next valuable slice is deck details plus card CRUD on top of
-            the deck workspace routes already in place.
+            The next valuable slice is text-first card CRUD on top of the deck
+            workspace that now reads real local deck data.
           </p>
         </CardContent>
       </Card>

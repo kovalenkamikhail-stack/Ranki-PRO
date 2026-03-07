@@ -117,8 +117,12 @@ async function main() {
     await page.getByRole('heading', { name: 'English' }).waitFor()
     await page.screenshot({ path: join(outputDir, 'deck-home-online.png') })
 
+    await page.getByRole('link', { name: 'Open English' }).click()
+    await page.getByRole('heading', { name: 'No cards in this deck yet.' }).waitFor()
+    await page.screenshot({ path: join(outputDir, 'deck-details-online.png') })
+
     await page.reload({ waitUntil: 'networkidle' })
-    await page.getByRole('heading', { name: 'English' }).waitFor()
+    await page.getByRole('heading', { name: 'No cards in this deck yet.' }).waitFor()
 
     await page.waitForFunction(async () => {
       if (!('serviceWorker' in navigator)) {
@@ -137,12 +141,12 @@ async function main() {
 
     await context.setOffline(true)
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await page.getByRole('heading', { name: 'English' }).waitFor()
-    await page.screenshot({ path: join(outputDir, 'deck-home-offline.png') })
+    await page.getByRole('heading', { name: 'No cards in this deck yet.' }).waitFor()
+    await page.screenshot({ path: join(outputDir, 'deck-details-offline.png') })
 
     await context.setOffline(false)
 
-    await page.getByRole('link', { name: 'Edit English' }).click()
+    await page.getByRole('link', { name: 'Edit deck' }).click()
     await page.getByLabel('Deck name').fill('English Updated')
     await page.getByRole('button', { name: 'Save changes' }).click()
     await page.getByRole('heading', { name: 'English Updated' }).waitFor()
