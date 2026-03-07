@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appDb } from '@/db/app-db'
 import { bootstrapAppDb } from '@/db/bootstrap'
 import { DeckDetailsPage } from '@/pages/decks/DeckDetailsPage'
@@ -141,9 +141,41 @@ describe('DeckDetailsPage', () => {
     expect(screen.getByText('Review')).toBeInTheDocument()
     expect(
       screen.getAllByText(
-        'Card editing, image support, and review actions stay outside this shell slice.',
+        'Text-first card editing is live. Image support and review actions stay outside this slice.',
       ).length,
     ).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: 'Edit obscure' })).toHaveAttribute(
+      'href',
+      `/decks/${deck.id}/cards/${firstCard.id}/edit`,
+    )
+  })
+
+  it('deletes a stored card and updates the empty state when the last one is removed', async () => {
+    const deck = buildDeck({ id: 'deck-1' })
+    const card = buildCard({
+      id: 'card-1',
+      deckId: deck.id,
+      frontText: 'obscure',
+      backText: 'hidden or difficult to understand',
+    })
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await appDb.decks.add(deck)
+    await appDb.cards.add(card)
+
+    renderDeckDetails()
+
+    expect(await screen.findByRole('heading', { name: 'obscure' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete obscure' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'obscure' })).not.toBeInTheDocument()
+    })
+
+    expect(screen.getByText('No cards in this deck yet.')).toBeInTheDocument()
+    expect(await appDb.cards.get(card.id)).toBeUndefined()
   })
 
   it('shows a missing state when the deck no longer exists', async () => {

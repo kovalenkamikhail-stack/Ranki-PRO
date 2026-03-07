@@ -36,7 +36,7 @@ export const router = createBrowserRouter([
         element: <EditCardPage mode="create" />,
       },
       {
-        path: 'cards/:cardId/edit',
+        path: 'decks/:deckId/cards/:cardId/edit',
         element: <EditCardPage mode="edit" />,
       },
       {

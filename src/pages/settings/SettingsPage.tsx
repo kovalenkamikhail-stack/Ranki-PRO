@@ -142,8 +142,8 @@ export function SettingsPage() {
             review history, and settings.
           </p>
           <p>
-            The next valuable slice is text-first card CRUD on top of the deck
-            workspace that now reads real local deck data.
+            The next valuable slice is the first real study-session flow on top
+            of the deck workspace and saved text-first cards.
           </p>
         </CardContent>
       </Card>
