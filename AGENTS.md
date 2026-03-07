@@ -117,8 +117,10 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - When asked to plan work, first break it into commit-sized tasks before implementation starts.
 - One implementation slice should usually be completable in one focused pass and safe to commit independently.
 - Do not work on multiple implementation slices in parallel.
-- Preferred loop: `task_planner` -> `worker` -> `reviewer` -> `shipper`.
+- Preferred loop: `task_planner` -> `worker` -> `reviewer` -> `shipper` -> `monitor`.
 - After a slice is implemented, run the relevant checks, review it, create or switch to a `codex/<slice-name>` branch, stage only that slice, commit it, push the branch, and only then move to the next slice.
+- `shipper` is responsible only for branch/commit/push.
+- `monitor` or the parent agent is responsible for waiting on PR creation, status checks, auto-merge, merge completion, and returning the local checkout to `main`.
 - If commit or push fails, stop and report the blocker instead of starting the next slice.
 - Because this repository may have unrelated changes, never use broad staging commands that can capture the whole worktree by accident.
 
@@ -132,7 +134,7 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - Push feature branches to `origin`; GitHub automation will create or update the PR into `main`.
 - `main` should move through GitHub PR auto-merge after checks, not through direct feature pushes.
 - Direct pushes to `main` are reserved for repository administration tasks only and require explicit parent instruction.
-- After a feature PR merges, return the local checkout to `main` and fast-forward it to `origin/main`.
+- After a feature PR merges, the parent or `monitor` should return the local checkout to `main` and fast-forward it to `origin/main`.
 
 ## External PR Policy
 

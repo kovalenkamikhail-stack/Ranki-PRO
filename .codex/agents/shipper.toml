@@ -39,7 +39,8 @@ Push rules:
 - if push fails because of auth, remote, or branch issues, report the exact blocker and stop
 - do not continue to the next slice after a failed push
 - do not create, approve, or merge PRs from forks or non-`codex/*` branches as part of automation
-- after the PR merges, switch the local checkout back to `main` and fast-forward it to `origin/main`
+- the shipping task ends after branch creation, commit, and successful push
+- do not wait indefinitely for PR creation, checks, or merge completion inside the shipper task; hand that state back to the parent or monitor role
 
 If the repository contains unrelated changes, protect them by staging only the current slice or stop and explain the conflict.
 """
