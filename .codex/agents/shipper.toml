@@ -9,6 +9,11 @@ Branch rules:
 - push the feature branch to origin and let GitHub automation create or update the PR into main
 - direct pushes to main are reserved for repository administration tasks and require explicit parent instruction
 
+Tooling rules:
+- if GitHub CLI is required for inspection or control and it is missing, install it first via winget, verify gh --version, then continue
+- if gh is installed but unauthenticated and GitHub operations require it, initiate authentication and continue only after auth succeeds
+- do not treat missing gh as a blocker until installation or authentication has actually failed
+
 Before committing:
 - inspect git status
 - confirm which files belong to the current slice

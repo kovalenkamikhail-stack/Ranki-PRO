@@ -23,6 +23,7 @@ This repository is configured for Codex multi-agent work.
 2. Make sure the project is trusted. Project-scoped `.codex/config.toml` is skipped for untrusted projects.
 3. Start a new thread after config changes so Codex reloads the config and instruction chain.
 4. Expect sub-agent work to appear mostly as one consolidated result in Codex App. The OpenAI docs note that detailed multi-agent visibility is still catching up outside the CLI.
+5. If standard repo tooling is missing, Codex should bootstrap it first instead of planning around the missing toolchain.
 
 ## Recommended Roles
 
@@ -76,6 +77,7 @@ Then recommend the single best next slice to execute now.
 Read docs/product/PRD-Offline-Flashcards-2026-03-07.md, then docs/product/ranki-mvp-brief.md, then AGENTS.md.
 Spawn architect for the file layout and docs_researcher for any PWA or Dexie constraints.
 Then use worker to scaffold the MVP foundation with React, TypeScript, Vite, Tailwind, shadcn/ui, vite-plugin-pwa, and Dexie.
+If common repo tooling such as Node.js, npm, npx, corepack, pnpm, or GitHub CLI is missing, bootstrap it first using trusted Windows package sources, verify the install, and only then continue.
 Keep it local-only and offline-first.
 ```
 
@@ -103,6 +105,7 @@ Read docs/product/PRD-Offline-Flashcards-2026-03-07.md, then docs/product/ranki-
 Use task_planner to choose the next smallest valuable slice.
 Use explorer only if codebase discovery is needed.
 Use worker to implement exactly one slice.
+If common repo tooling is missing, install or enable it first instead of treating it as a blocker.
 Run the relevant checks.
 Use reviewer for a focused review.
 If the slice is good, use shipper to create or switch to a codex/<slice-name> branch, then commit and push only that slice there.
