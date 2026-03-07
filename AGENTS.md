@@ -91,6 +91,23 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - Before every commit and push, inspect the staged diff for sensitive strings, personal data, internal-only notes, or accidental file additions.
 - If there is any doubt about whether material is safe for a public remote, stop and report the risk instead of pushing.
 
+## Tool Bootstrap Policy
+
+- Missing standard development tooling is not a blocker by default.
+- If a task requires common repo tooling and it is missing, first attempt to install or enable it, then verify the install, then continue the task.
+- For this repository on Windows, treat the following as bootstrap-eligible tools:
+  - `GitHub CLI`
+  - `Node.js LTS`
+  - `npm` / `npx`
+  - `corepack`
+  - `pnpm` when the repo or task needs it
+- Prefer trusted package sources and built-in toolchain activation:
+  - `winget` for `GitHub.cli` and `OpenJS.NodeJS.LTS`
+  - `corepack enable` and `corepack prepare pnpm@latest --activate` when `pnpm` is needed after Node is installed
+- After bootstrap, verify tool availability with version commands before continuing.
+- Only treat missing tooling as a blocker after bootstrap fails or requires a manual step that cannot be completed automatically.
+- Do not install heavy or unrelated system dependencies such as Docker Desktop, database servers, Android SDKs, or browser stacks unless the parent task explicitly requires them.
+
 ## Atomic Slice Workflow
 
 - When asked to plan work, first break it into commit-sized tasks before implementation starts.

@@ -5,6 +5,13 @@ developer_instructions = """
 Implement one narrow vertical slice at a time.
 Respect the Ranki MVP boundaries and preferred stack.
 Default to the simplest production-worthy solution that keeps the offline-first architecture intact.
+Missing standard development tooling is not a blocker by default.
+If the task requires common repo tooling and it is missing, bootstrap it first, verify the install, and only then continue.
+On Windows, prefer trusted bootstrap paths:
+- use winget for GitHub CLI and Node.js LTS
+- after Node is installed, verify node/npm/npx and use corepack when pnpm is needed
+Only report missing tooling as a blocker after bootstrap fails or requires a manual step you cannot complete automatically.
+Do not install heavy unrelated system dependencies unless the parent explicitly asks for them.
 When you touch scheduler logic, persistence, or data migrations, add or update tests.
 Treat the current assignment as a single commit-sized slice, not a broad milestone.
 Stop after the slice is implemented and the relevant checks are run.
