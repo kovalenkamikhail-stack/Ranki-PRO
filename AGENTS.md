@@ -82,6 +82,15 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - Write tests for scheduler logic and other correctness-critical behavior.
 - When the repository is still being scaffolded, preserve the chosen stack and directory layout instead of experimenting with multiple frameworks.
 
+## Repository Safety
+
+- Treat `origin` as an internet-facing repository. Only commit code, docs, and assets that are intentionally safe to publish.
+- Never commit or push secrets, API keys, tokens, SSH keys, cookies, credentials, local `.env` data, browser exports, or machine-specific auth material.
+- Never commit local databases, caches, captured user content, personal screenshots, or logs that may contain private data, prompts, or identifiers.
+- Never copy raw files from `Downloads`, `Desktop`, or local app storage into the repository unless they were explicitly sanitized for publication.
+- Before every commit and push, inspect the staged diff for sensitive strings, personal data, internal-only notes, or accidental file additions.
+- If there is any doubt about whether material is safe for a public remote, stop and report the risk instead of pushing.
+
 ## Atomic Slice Workflow
 
 - When asked to plan work, first break it into commit-sized tasks before implementation starts.
@@ -99,3 +108,9 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - Push feature branches to `origin`; GitHub automation will create or update the PR into `main`.
 - `main` should move through GitHub PR auto-merge after checks, not through direct feature pushes.
 - Direct pushes to `main` are reserved for repository administration tasks only and require explicit parent instruction.
+
+## External PR Policy
+
+- Automation and agents must only create or operate on PRs sourced from local `codex/*` branches in this repository.
+- Do not approve, merge, or auto-merge PRs from forks, unknown contributors, or non-`codex/*` branches unless the parent explicitly asks for a manual review flow.
+- If external PRs or unsolicited changes appear, leave them untouched and report them to the repository owner.
