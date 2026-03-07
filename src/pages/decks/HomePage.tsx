@@ -100,8 +100,9 @@ export function HomePage() {
                 placeholder.
               </CardTitle>
               <CardDescription className="max-w-2xl text-base">
-                Create, rename, and delete decks offline. Cards, counters, and
-                study flow stay out of this slice on purpose.
+                Create, rename, and delete decks offline. Each deck now opens
+                into a real local workspace while card editing and study flow
+                stay in separate MVP slices.
               </CardDescription>
             </div>
           </CardHeader>
@@ -136,7 +137,7 @@ export function HomePage() {
                 </p>
                 <p className="mt-2 text-xl font-semibold">No cards yet</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  This slice stops at deck CRUD and offline persistence.
+                  Card editing and study logic still stay out of scope here.
                 </p>
               </div>
             </div>
@@ -182,8 +183,8 @@ export function HomePage() {
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
               <p className="font-medium">Later slices stay separate</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Card CRUD, counters, review queues, and analytics remain out of
-                scope here.
+                Card CRUD, review queues, and analytics remain out of scope
+                here.
               </p>
             </div>
           </CardContent>
@@ -220,7 +221,8 @@ export function HomePage() {
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
                 Create the first deck to start building a local study library.
-                Cards and review scheduling land in later MVP slices.
+                Each deck opens into a real workspace shell, while card editing
+                and review scheduling still land in later MVP slices.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button asChild>
@@ -271,8 +273,8 @@ export function HomePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-                    Stored locally with deck settings defaults ready. Card list,
-                    counters, and study flow are still intentionally pending.
+                    Stored locally with deck settings defaults ready. Open the
+                    deck to inspect its workspace shell and local card list.
                   </div>
 
                   <div className="flex flex-wrap gap-3">
