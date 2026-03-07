@@ -1,0 +1,68 @@
+# Ranki-PRO GitHub Automation
+
+This repository uses a branch-first workflow for product work.
+
+## Intended Flow
+
+1. Codex works on a local feature branch named `codex/<slice-name>`.
+2. Codex commits and pushes that branch to `origin`.
+3. GitHub Actions creates or updates a pull request from `codex/<slice-name>` into `main`.
+4. GitHub Actions attempts to enable auto-merge on that PR.
+5. GitHub merges into `main` after the required checks pass.
+
+## Workflows
+
+- `.github/workflows/codex-auto-pr.yml`
+  - creates or updates PRs for `codex/*` branches
+  - attempts to enable auto-merge
+- `.github/workflows/repository-checks.yml`
+  - provides a lightweight required check for the repository baseline
+- `.github/workflows/telegram-commits.yml`
+  - sends Telegram notifications for pushes to `main`
+
+## Required GitHub Repository Settings
+
+These settings must be enabled in the GitHub UI.
+
+### 1. Workflow permissions
+
+Path:
+- `Settings -> Actions -> General -> Workflow permissions`
+
+Set:
+- `Read and write permissions`
+- enable `Allow GitHub Actions to create and approve pull requests`
+
+### 2. Allow auto-merge
+
+Path:
+- `Settings -> General -> Pull Requests`
+
+Enable:
+- `Allow auto-merge`
+
+### 3. Protect main
+
+Path:
+- `Settings -> Branches -> Add branch protection rule`
+
+Recommended rule for `main`:
+- require a pull request before merging
+- require status checks to pass before merging
+- include the check `Repository Checks / repo-checks`
+- optionally require branches to be up to date before merging
+- optionally disallow direct pushes to `main`
+
+### 4. Optional cleanup
+
+Path:
+- `Settings -> General -> Pull Requests`
+
+Optional:
+- enable automatic deletion of head branches after merge
+
+## Notes
+
+- Auto-merge can only complete if the repository setting is enabled.
+- If GitHub Actions cannot create PRs, the usual cause is missing workflow permissions in repository settings.
+- If auto-merge is not enabled by the workflow, check repository settings first, then review the workflow logs.

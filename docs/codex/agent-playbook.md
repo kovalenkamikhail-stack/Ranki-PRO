@@ -91,7 +91,8 @@ Then summarize the result as a spec that worker can implement.
 ```text
 Use explorer to inspect the current codebase, then use worker to implement only the next atomic slice.
 After that, use reviewer to check correctness and missing tests.
-If the checks pass, use shipper to stage only the files from that slice, make one commit, and push the current branch.
+If the checks pass, use shipper to create or switch to a codex/<slice-name> branch, stage only the files from that slice, make one commit, and push that branch.
+Let GitHub automation open or update the PR into main and enable auto-merge.
 Do not start another slice until commit and push succeed.
 ```
 
@@ -104,10 +105,11 @@ Use explorer only if codebase discovery is needed.
 Use worker to implement exactly one slice.
 Run the relevant checks.
 Use reviewer for a focused review.
-If the slice is good, use shipper to commit and push only that slice.
+If the slice is good, use shipper to create or switch to a codex/<slice-name> branch, then commit and push only that slice there.
 After push succeeds, stop and summarize:
 - what was shipped
 - commit hash
+- branch name
 - exact run commands
 - recommended next slice
 ```
@@ -127,4 +129,6 @@ Summarize concrete findings only.
 - There is no declarative workflow graph in `.codex/config.toml`; sequencing such as `worker -> shipper -> next slice` is enforced through role instructions and the parent prompt.
 - Keep prompts narrow. Multi-agent works best when each role has one clear job.
 - Keep the full PRD as the source of truth and the brief as the fast reference.
+- Feature branches should follow the `codex/<slice-name>` pattern.
+- GitHub automation creates or updates PRs for `codex/*` branches and should move approved work into `main`.
 - If the product brief changes, update `docs/product/ranki-mvp-brief.md` before relying on it.

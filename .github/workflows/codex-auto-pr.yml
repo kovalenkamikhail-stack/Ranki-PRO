@@ -1,0 +1,115 @@
+name: Codex Feature Branch PR
+
+on:
+  push:
+    branches:
+      - 'codex/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: codex-auto-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update PR for codex branch
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const head = context.ref.replace("refs/heads/", "");
+            const base = "main";
+            const commit = context.payload.head_commit || {};
+            const rawMessage = (commit.message || head).trim();
+            const title = (rawMessage.split("\n")[0] || head).slice(0, 250);
+
+            const bodyLines = [
+              "This PR was created or updated automatically for a Codex feature branch.",
+              "",
+              `Branch: \`${head}\``,
+              commit.id ? `Head commit: \`${commit.id.slice(0, 7)}\`` : "",
+              rawMessage ? `Latest commit: ${rawMessage}` : "",
+              context.payload.compare ? `Compare: ${context.payload.compare}` : "",
+            ].filter(Boolean);
+
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open",
+              head: `${owner}:${head}`,
+              base,
+              per_page: 1,
+            });
+
+            let pr;
+
+            if (existing.data.length > 0) {
+              pr = existing.data[0];
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: pr.number,
+                title,
+                body: bodyLines.join("\n"),
+              });
+              core.info(`Updated existing PR #${pr.number}`);
+            } else {
+              pr = (
+                await github.rest.pulls.create({
+                  owner,
+                  repo,
+                  head,
+                  base,
+                  title,
+                  body: bodyLines.join("\n"),
+                  maintainer_can_modify: true,
+                })
+              ).data;
+              core.info(`Created PR #${pr.number}`);
+            }
+
+            core.setOutput("number", String(pr.number));
+            core.setOutput("node_id", pr.node_id);
+            core.setOutput("html_url", pr.html_url);
+
+      - name: Enable auto-merge
+        uses: actions/github-script@v7
+        continue-on-error: true
+        env:
+          PR_NODE_ID: ${{ steps.pr.outputs.node_id }}
+        with:
+          script: |
+            const pullRequestId = process.env.PR_NODE_ID;
+
+            if (!pullRequestId) {
+              core.warning("No PR node id returned from create/update step.");
+              return;
+            }
+
+            try {
+              await github.graphql(
+                `
+                  mutation EnableAutoMerge($pullRequestId: ID!) {
+                    enablePullRequestAutoMerge(
+                      input: {
+                        pullRequestId: $pullRequestId,
+                        mergeMethod: SQUASH
+                      }
+                    ) {
+                      clientMutationId
+                    }
+                  }
+                `,
+                { pullRequestId }
+              );
+              core.info("Auto-merge enabled.");
+            } catch (error) {
+              core.warning(`Auto-merge was not enabled: ${error.message}`);
+            }

@@ -88,7 +88,14 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - One implementation slice should usually be completable in one focused pass and safe to commit independently.
 - Do not work on multiple implementation slices in parallel.
 - Preferred loop: `task_planner` -> `worker` -> `reviewer` -> `shipper`.
-- After a slice is implemented, run the relevant checks, review it, stage only that slice, commit it, push it, and only then move to the next slice.
+- After a slice is implemented, run the relevant checks, review it, create or switch to a `codex/<slice-name>` branch, stage only that slice, commit it, push the branch, and only then move to the next slice.
 - If commit or push fails, stop and report the blocker instead of starting the next slice.
 - Because this repository may have unrelated changes, never use broad staging commands that can capture the whole worktree by accident.
-- Do not open a pull request unless the parent prompt explicitly asks for it.
+
+## Git Branch Policy
+
+- Product and feature work must not be pushed directly to `main`.
+- If the current branch is `main` or a detached HEAD, create a feature branch using the `codex/<slice-name>` pattern before committing.
+- Push feature branches to `origin`; GitHub automation will create or update the PR into `main`.
+- `main` should move through GitHub PR auto-merge after checks, not through direct feature pushes.
+- Direct pushes to `main` are reserved for repository administration tasks only and require explicit parent instruction.
