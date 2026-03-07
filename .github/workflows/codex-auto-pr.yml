@@ -39,6 +39,29 @@ jobs:
               context.payload.compare ? `Compare: ${context.payload.compare}` : "",
             ].filter(Boolean);
 
+            const mergedMatches = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "closed",
+              head: `${owner}:${head}`,
+              base,
+              per_page: 20,
+            });
+
+            const alreadyMerged = mergedMatches.data.find((pull) => {
+              return pull.merged_at && pull.head?.sha === context.sha;
+            });
+
+            if (alreadyMerged) {
+              core.info(
+                `Skipping PR creation because PR #${alreadyMerged.number} already merged head ${context.sha.slice(0, 7)} into ${base}.`
+              );
+              core.setOutput("skip", "true");
+              core.setOutput("number", String(alreadyMerged.number));
+              core.setOutput("html_url", alreadyMerged.html_url);
+              return;
+            }
+
             const existing = await github.rest.pulls.list({
               owner,
               repo,
@@ -78,8 +101,10 @@ jobs:
             core.setOutput("number", String(pr.number));
             core.setOutput("node_id", pr.node_id);
             core.setOutput("html_url", pr.html_url);
+            core.setOutput("skip", "false");
 
       - name: Enable auto-merge
+        if: steps.pr.outputs.skip != 'true'
         uses: actions/github-script@v7
         continue-on-error: true
         env:
@@ -115,6 +140,7 @@ jobs:
             }
 
       - name: Wait for merge and send Telegram notification
+        if: steps.pr.outputs.skip != 'true'
         continue-on-error: true
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
