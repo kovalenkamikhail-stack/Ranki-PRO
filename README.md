@@ -27,3 +27,4 @@ It intentionally does not contain application code from the older `Ranki` reposi
 ## Repository Status
 
 - GitHub SSH push verified on 2026-03-07.
+- Telegram commit notification workflow configured on 2026-03-07.
