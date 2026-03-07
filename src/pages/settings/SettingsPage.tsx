@@ -114,7 +114,7 @@ export function SettingsPage() {
               <Link to="/">Back to decks</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/decks/new">Next deck form route</Link>
+              <Link to="/decks/new">Create deck</Link>
             </Button>
           </div>
         </CardContent>
@@ -127,8 +127,8 @@ export function SettingsPage() {
           </div>
           <CardTitle>Why this stops here</CardTitle>
           <CardDescription>
-            The foundation slice stays intentionally narrow so the next pass can
-            focus on one coherent feature workflow at a time.
+            This MVP still moves in narrow slices so each pass can harden one
+            coherent workflow at a time.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
@@ -142,7 +142,8 @@ export function SettingsPage() {
             review history, and settings.
           </p>
           <p>
-            The next valuable slice is deck CRUD on top of this shell.
+            The next valuable slice is deck details plus card CRUD on top of
+            the deck workspace routes already in place.
           </p>
         </CardContent>
       </Card>

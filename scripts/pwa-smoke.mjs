@@ -75,8 +75,13 @@ async function main() {
   const preview = spawn(
     process.platform === 'win32' ? 'cmd.exe' : 'pnpm',
     process.platform === 'win32'
-      ? ['/d', '/s', '/c', `pnpm preview --host ${host} --port ${port}`]
-      : ['preview', '--host', host, '--port', String(port)],
+      ? [
+          '/d',
+          '/s',
+          '/c',
+          `pnpm preview --host ${host} --port ${port} --strictPort`,
+        ]
+      : ['preview', '--host', host, '--port', String(port), '--strictPort'],
     {
       cwd: projectRoot,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -102,9 +107,18 @@ async function main() {
       browserConsole.push(`[${message.type()}] ${message.text()}`)
     })
 
-    await page.goto(`${baseUrl}/decks/demo-deck`, { waitUntil: 'networkidle' })
-    await page.getByText('Deck workspace reserved').waitFor()
-    await page.screenshot({ path: join(outputDir, 'online-deck-route.png') })
+    await page.goto(baseUrl, { waitUntil: 'networkidle' })
+    await page.getByRole('heading', { name: 'No decks yet' }).waitFor()
+
+    await page.getByRole('link', { name: 'Create your first deck' }).click()
+    await page.getByLabel('Deck name').fill('English')
+    await page.getByLabel('Description').fill('Core vocabulary')
+    await page.getByRole('button', { name: 'Create deck' }).click()
+    await page.getByRole('heading', { name: 'English' }).waitFor()
+    await page.screenshot({ path: join(outputDir, 'deck-home-online.png') })
+
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByRole('heading', { name: 'English' }).waitFor()
 
     await page.waitForFunction(async () => {
       if (!('serviceWorker' in navigator)) {
@@ -119,15 +133,24 @@ async function main() {
       }
     })
 
-    await page.reload({ waitUntil: 'networkidle' })
     await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller))
 
     await context.setOffline(true)
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await page.getByRole('heading', { name: 'Deck workspace reserved' }).waitFor()
-    await page.screenshot({ path: join(outputDir, 'offline-deck-route.png') })
+    await page.getByRole('heading', { name: 'English' }).waitFor()
+    await page.screenshot({ path: join(outputDir, 'deck-home-offline.png') })
 
     await context.setOffline(false)
+
+    await page.getByRole('link', { name: 'Edit English' }).click()
+    await page.getByLabel('Deck name').fill('English Updated')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByRole('heading', { name: 'English Updated' }).waitFor()
+
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.getByRole('button', { name: 'Delete English Updated' }).click()
+    await page.getByRole('heading', { name: 'No decks yet' }).waitFor()
+
     await browser.close()
 
     await writeFile(previewLogPath, previewLog.join(''), 'utf8')

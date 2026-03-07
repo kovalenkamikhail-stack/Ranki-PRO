@@ -23,7 +23,7 @@ export function AppHeader() {
               <span className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 Ranki
               </span>
-              <Badge variant="accent">Foundation Slice</Badge>
+              <Badge variant="accent">Local-first MVP</Badge>
             </Link>
 
             <div>
@@ -31,8 +31,8 @@ export function AppHeader() {
                 Calm flashcards that stay with you offline.
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                This first slice wires the installable shell, route map, and
-                local persistence boundary for the Ranki MVP.
+                Decks already persist on this device. Card editing, study
+                sessions, and limits land in the next MVP slices.
               </p>
             </div>
           </div>
