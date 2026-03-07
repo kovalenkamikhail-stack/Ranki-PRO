@@ -6,6 +6,7 @@ import {
   PencilLine,
   Plus,
   Rows3,
+  Trash2,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -19,7 +20,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { bootstrapAppDb } from '@/db/bootstrap'
-import { listCardsForDeck } from '@/db/cards'
+import { deleteCardCascade, listCardsForDeck } from '@/db/cards'
 import { getDeck } from '@/db/decks'
 import type { Card as DeckCard, CardState } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
@@ -108,9 +109,11 @@ function MissingDeckIdState() {
 function DeckWorkspace({ deckId }: { deckId: string }) {
   const [deck, setDeck] = useState<Deck | null>(null)
   const [cards, setCards] = useState<DeckCard[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isMissing, setIsMissing] = useState(false)
+  const [deletingCardId, setDeletingCardId] = useState<string | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -132,7 +135,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
       })
       .catch((nextError: unknown) => {
         if (isMounted) {
-          setError(
+          setLoadError(
             nextError instanceof Error
               ? nextError.message
               : 'Failed to load deck workspace.',
@@ -150,6 +153,38 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
     }
   }, [deckId])
 
+  const handleDeleteCard = async (card: DeckCard) => {
+    const confirmed = window.confirm(
+      `Delete "${card.frontText}" from "${deck?.name ?? 'this deck'}" on this device?`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingCardId(card.id)
+    setActionError(null)
+
+    try {
+      await deleteCardCascade(card.id)
+      setCards((currentCards) =>
+        currentCards.filter((currentCard) => currentCard.id !== card.id),
+      )
+
+      const refreshedDeck = await getDeck(deckId)
+
+      if (refreshedDeck) {
+        setDeck(refreshedDeck)
+      }
+    } catch (nextError: unknown) {
+      setActionError(
+        nextError instanceof Error ? nextError.message : 'Failed to delete card.',
+      )
+    } finally {
+      setDeletingCardId(null)
+    }
+  }
+
   if (isLoading) {
     return (
       <Card className="mx-auto max-w-4xl">
@@ -163,7 +198,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
     )
   }
 
-  if (error) {
+  if (loadError) {
     return (
       <Card className="mx-auto max-w-4xl">
         <CardHeader className="gap-4">
@@ -175,7 +210,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
               Deck Details
             </p>
             <CardTitle className="text-3xl">Deck workspace unavailable</CardTitle>
-            <CardDescription className="text-base">{error}</CardDescription>
+            <CardDescription className="text-base">{loadError}</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
@@ -245,7 +280,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
               <CardTitle className="text-3xl sm:text-4xl">{deck.name}</CardTitle>
               <CardDescription className="max-w-2xl text-base">
                 {deck.description ??
-                  'No description yet. This deck workspace is ready for card shells and deck-scoped actions.'}
+                  'No description yet. This deck workspace is ready for text-first cards and later study actions.'}
               </CardDescription>
             </div>
           </CardHeader>
@@ -353,6 +388,15 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
       </section>
 
       <section className="space-y-4">
+        {actionError ? (
+          <div
+            role="alert"
+            className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
+          >
+            {actionError}
+          </div>
+        ) : null}
+
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">Cards</h2>
@@ -382,7 +426,8 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                 </h3>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
                   The deck workspace is live, but this deck still needs its first
-                  card. Add one manually in the next local-only MVP slice.
+                  card. Add one manually and it will save locally to Dexie right
+                  away.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button asChild>
@@ -434,9 +479,33 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                   </div>
 
                   <p className="text-sm text-muted-foreground">
-                    Card editing, image support, and review actions stay outside
-                    this shell slice.
+                    Text-first card editing is live. Image support and review
+                    actions stay outside this slice.
                   </p>
+
+                  <div className="flex flex-wrap gap-3">
+                    <Button asChild variant="outline">
+                      <Link
+                        to={`/decks/${deck.id}/cards/${card.id}/edit`}
+                        aria-label={`Edit ${card.frontText}`}
+                      >
+                        <PencilLine className="mr-2 h-4 w-4" />
+                        Edit
+                      </Link>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void handleDeleteCard(card)}
+                      disabled={deletingCardId === card.id}
+                      aria-label={`Delete ${card.frontText}`}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {deletingCardId === card.id ? 'Deleting...' : 'Delete'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

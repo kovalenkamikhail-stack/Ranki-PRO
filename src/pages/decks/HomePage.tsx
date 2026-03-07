@@ -101,8 +101,8 @@ export function HomePage() {
               </CardTitle>
               <CardDescription className="max-w-2xl text-base">
                 Create, rename, and delete decks offline. Each deck now opens
-                into a real local workspace while card editing and study flow
-                stay in separate MVP slices.
+                into a real local workspace with text-first card CRUD, while
+                study flow stays in separate MVP slices.
               </CardDescription>
             </div>
           </CardHeader>
@@ -137,7 +137,7 @@ export function HomePage() {
                 </p>
                 <p className="mt-2 text-xl font-semibold">No cards yet</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Card editing and study logic still stay out of scope here.
+                  Study logic still stays out of scope here.
                 </p>
               </div>
             </div>
@@ -183,8 +183,8 @@ export function HomePage() {
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
               <p className="font-medium">Later slices stay separate</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Card CRUD, review queues, and analytics remain out of scope
-                here.
+                Review queues, scheduler logic, and analytics remain out of
+                scope here.
               </p>
             </div>
           </CardContent>
@@ -221,8 +221,8 @@ export function HomePage() {
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
                 Create the first deck to start building a local study library.
-                Each deck opens into a real workspace shell, while card editing
-                and review scheduling still land in later MVP slices.
+                Each deck opens into a real workspace with card CRUD, while
+                review scheduling still lands in later MVP slices.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button asChild>

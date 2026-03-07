@@ -31,8 +31,8 @@ export function AppHeader() {
                 Calm flashcards that stay with you offline.
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Decks already persist on this device. Card editing, study
-                sessions, and limits land in the next MVP slices.
+                Decks and text-first cards already persist on this device.
+                Study sessions and limits land in the next MVP slices.
               </p>
             </div>
           </div>

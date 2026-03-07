@@ -213,8 +213,8 @@ export function EditDeckPage({ mode }: EditDeckPageProps) {
           </label>
 
           <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-            Stored only on this device for MVP. Card CRUD, study queues, and
-            per-deck limits land in later slices.
+            Stored only on this device for MVP. Text-first card CRUD is live,
+            while study queues and per-deck limits land in later slices.
           </div>
 
           <div className="flex flex-wrap gap-3">
