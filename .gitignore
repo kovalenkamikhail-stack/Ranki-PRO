@@ -39,6 +39,7 @@ Thumbs.db
 cookies.txt
 playwright-report/
 test-results/
+output/playwright/
 tmp/
 temp/
 secrets/

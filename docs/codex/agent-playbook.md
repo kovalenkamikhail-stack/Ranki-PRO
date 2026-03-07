@@ -24,6 +24,7 @@ This repository is configured for Codex multi-agent work.
 3. Start a new thread after config changes so Codex reloads the config and instruction chain.
 4. Expect sub-agent work to appear mostly as one consolidated result in Codex App. The OpenAI docs note that detailed multi-agent visibility is still catching up outside the CLI.
 5. If standard repo tooling is missing, Codex should bootstrap it first instead of planning around the missing toolchain.
+6. For browser-level verification, prefer the repo-local Playwright Chromium smoke flow before trying MCP browser installation.
 
 ## Recommended Roles
 
@@ -78,6 +79,7 @@ Read docs/product/PRD-Offline-Flashcards-2026-03-07.md, then docs/product/ranki-
 Spawn architect for the file layout and docs_researcher for any PWA or Dexie constraints.
 Then use worker to scaffold the MVP foundation with React, TypeScript, Vite, Tailwind, shadcn/ui, vite-plugin-pwa, and Dexie.
 If common repo tooling such as Node.js, npm, npx, corepack, pnpm, or GitHub CLI is missing, bootstrap it first using trusted Windows package sources, verify the install, and only then continue.
+If browser-level PWA verification is needed, install the local Playwright Chromium browser and run `pnpm smoke:pwa`.
 Keep it local-only and offline-first.
 ```
 
@@ -135,3 +137,4 @@ Summarize concrete findings only.
 - Feature branches should follow the `codex/<slice-name>` pattern.
 - GitHub automation creates or updates PRs for `codex/*` branches and should move approved work into `main`.
 - If the product brief changes, update `docs/product/ranki-mvp-brief.md` before relying on it.
+- For real browser smoke on this repo, prefer `pnpm smoke:pwa` and inspect artifacts in `output/playwright/pwa-smoke/`.

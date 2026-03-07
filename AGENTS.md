@@ -107,6 +107,10 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - After bootstrap, verify tool availability with version commands before continuing.
 - Only treat missing tooling as a blocker after bootstrap fails or requires a manual step that cannot be completed automatically.
 - Do not install heavy or unrelated system dependencies such as Docker Desktop, database servers, Android SDKs, or browser stacks unless the parent task explicitly requires them.
+- For browser or PWA verification in this repository, prefer the local Playwright Chromium flow:
+  - `pnpm playwright:install`
+  - `pnpm smoke:pwa`
+- Treat MCP browser automation as optional for interactive debugging, not as the only path for browser-level verification.
 
 ## Atomic Slice Workflow
 

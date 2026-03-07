@@ -30,6 +30,15 @@ pnpm test
 pnpm build
 ```
 
+## Browser Smoke
+
+```bash
+pnpm playwright:install
+pnpm smoke:pwa
+```
+
+This launches a local preview build, opens the app in Playwright Chromium, verifies the shell and service worker, then reloads a deck route offline and stores artifacts under `output/playwright/pwa-smoke/`.
+
 ## Product Sources
 
 - `docs/product/PRD-Offline-Flashcards-2026-03-07.md`

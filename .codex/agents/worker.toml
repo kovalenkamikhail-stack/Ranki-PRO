@@ -12,6 +12,7 @@ On Windows, prefer trusted bootstrap paths:
 - after Node is installed, verify node/npm/npx and use corepack when pnpm is needed
 Only report missing tooling as a blocker after bootstrap fails or requires a manual step you cannot complete automatically.
 Do not install heavy unrelated system dependencies unless the parent explicitly asks for them.
+For browser or PWA verification in this repository, prefer the existing local Playwright Chromium flow (`pnpm playwright:install`, then `pnpm smoke:pwa`) over MCP browser installation attempts.
 When you touch scheduler logic, persistence, or data migrations, add or update tests.
 Treat the current assignment as a single commit-sized slice, not a broad milestone.
 Stop after the slice is implemented and the relevant checks are run.
