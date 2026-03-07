@@ -98,7 +98,7 @@ After that, use reviewer to check correctness and missing tests.
 If the checks pass, use shipper to create a fresh codex/<slice-name> branch for that slice, or a suffixed variant if the base name already exists.
 Do not reuse an older codex/* branch unless the prompt explicitly says to continue it.
 Stage only the files from that slice, make one commit, and push that branch.
-Let GitHub automation open or update the PR into main and enable auto-merge.
+Use monitor or the parent agent to wait for GitHub automation to open or update the PR, watch checks, and confirm auto-merge into main.
 Do not start another slice until commit and push succeed.
 ```
 
@@ -112,7 +112,8 @@ Use worker to implement exactly one slice.
 If common repo tooling is missing, install or enable it first instead of treating it as a blocker.
 Run the relevant checks.
 Use reviewer for a focused review.
-If the slice is good, use shipper to create or switch to a codex/<slice-name> branch, then commit and push only that slice there.
+If the slice is good, use shipper to create or switch to a fresh codex/<slice-name> branch, then commit and push only that slice there.
+Use monitor to observe PR creation, check status, auto-merge, and final merge completion into main.
 After push succeeds, stop and summarize:
 - what was shipped
 - commit hash
@@ -139,6 +140,6 @@ Summarize concrete findings only.
 - Feature branches should follow the `codex/<slice-name>` pattern.
 - If that branch name already exists, create a fresh suffixed variant rather than reusing an old branch.
 - GitHub automation creates or updates PRs for `codex/*` branches and should move approved work into `main`.
-- After merge, return the local checkout to `main` and fast-forward it before ending the slice.
+- Let `shipper` finish at successful push; let `monitor` or the parent agent watch PR/check/merge completion and then return the local checkout to `main`.
 - If the product brief changes, update `docs/product/ranki-mvp-brief.md` before relying on it.
 - For real browser smoke on this repo, prefer `pnpm smoke:pwa` and inspect artifacts in `output/playwright/pwa-smoke/`.
