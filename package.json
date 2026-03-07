@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings=0",
     "preview": "vite preview",
+    "playwright:install": "playwright install chromium",
+    "smoke:pwa": "pnpm build && node ./scripts/pwa-smoke.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -39,6 +41,7 @@
     "fake-indexeddb": "^6.2.5",
     "globals": "^16.5.0",
     "jsdom": "^28.1.0",
+    "playwright": "^1.58.2",
     "tailwindcss": "^4.2.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
