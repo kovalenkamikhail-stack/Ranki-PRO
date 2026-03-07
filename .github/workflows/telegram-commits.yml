@@ -1,0 +1,96 @@
+name: Telegram Commit Notifications
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notifications for pushed commits
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          COMMITS_JSON: ${{ toJson(github.event.commits) }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          COMPARE_URL: ${{ github.event.compare }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.parse
+          import urllib.request
+
+          token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+          chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+
+          if not token or not chat_id:
+              print("Telegram secrets are not configured. Skipping notification.")
+              sys.exit(0)
+
+          commits = json.loads(os.environ.get("COMMITS_JSON") or "[]")
+          repo = os.environ.get("REPO", "")
+          branch = os.environ.get("BRANCH", "")
+          compare_url = os.environ.get("COMPARE_URL", "")
+
+          def send_message(text: str) -> None:
+              data = urllib.parse.urlencode(
+                  {
+                      "chat_id": chat_id,
+                      "text": text,
+                      "disable_web_page_preview": "true",
+                  }
+              ).encode()
+
+              with urllib.request.urlopen(
+                  f"https://api.telegram.org/bot{token}/sendMessage",
+                  data=data,
+              ) as response:
+                  response.read()
+
+          for commit in commits:
+              sha = commit.get("id", "")[:7]
+              author = commit.get("author", {}).get("name", "unknown")
+              message = commit.get("message", "").strip()
+              first_line = message.splitlines()[0] if message else "(no message)"
+              url = commit.get("url", "")
+
+              files = []
+              for path in commit.get("added", []):
+                  files.append(f"+ {path}")
+              for path in commit.get("modified", []):
+                  files.append(f"~ {path}")
+              for path in commit.get("removed", []):
+                  files.append(f"- {path}")
+
+              if files:
+                  shown = files[:20]
+                  files_block = "\n".join(shown)
+                  if len(files) > 20:
+                      files_block += f"\n... and {len(files) - 20} more"
+              else:
+                  files_block = "(no file list provided)"
+
+              text = "\n".join(
+                  [
+                      f"Repo: {repo}",
+                      f"Branch: {branch}",
+                      f"Commit: {sha}",
+                      f"Author: {author}",
+                      f"Message: {first_line}",
+                      "Files:",
+                      files_block,
+                      f"Commit URL: {url}",
+                      f"Compare: {compare_url}",
+                  ]
+              )
+
+              send_message(text)
+          PY
