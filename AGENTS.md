@@ -125,10 +125,14 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 ## Git Branch Policy
 
 - Product and feature work must not be pushed directly to `main`.
-- If the current branch is `main` or a detached HEAD, create a feature branch using the `codex/<slice-name>` pattern before committing.
+- If the current branch is `main` or a detached HEAD, create a fresh feature branch using the `codex/<slice-name>` pattern before committing.
+- Never reuse an existing `codex/*` branch for a new slice unless the parent explicitly says to continue that exact branch.
+- If the preferred `codex/<slice-name>` branch already exists locally or on `origin`, create a new unique branch by appending a short suffix instead of reusing the old branch.
+- Before pushing, compare the branch against `origin/main`; if files outside the current slice appear in the diff, stop and fix the branch hygiene before shipping.
 - Push feature branches to `origin`; GitHub automation will create or update the PR into `main`.
 - `main` should move through GitHub PR auto-merge after checks, not through direct feature pushes.
 - Direct pushes to `main` are reserved for repository administration tasks only and require explicit parent instruction.
+- After a feature PR merges, return the local checkout to `main` and fast-forward it to `origin/main`.
 
 ## External PR Policy
 
