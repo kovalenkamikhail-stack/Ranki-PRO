@@ -29,3 +29,4 @@ It intentionally does not contain application code from the older `Ranki` reposi
 - GitHub SSH push verified on 2026-03-07.
 - Telegram commit notification workflow configured on 2026-03-07.
 - Codex branch-first auto-PR flow smoke-tested on 2026-03-07.
+- Codex auto-merge workflow smoke-tested on 2026-03-07.
