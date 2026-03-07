@@ -1,32 +1,44 @@
 # Ranki-PRO
 
-Clean start for the next-generation Ranki project.
+Offline-first flashcards foundation for the next-generation Ranki MVP.
 
-## Current Scope
+## Current Status
 
-This repository currently contains:
+The repository now contains the first production-worthy application slice:
 
-- Codex multi-agent project setup
-- the full source PRD
-- a product brief derived from the PRD
-- planning and execution playbook
+- React 19 + TypeScript + Vite
+- Tailwind CSS v4
+- shadcn/ui base setup
+- `vite-plugin-pwa` manifest + service worker wiring
+- Dexie schema/bootstrap for MVP entities
+- mobile-first app shell with route placeholders for all required MVP screens
 
-It intentionally does not contain application code from the older `Ranki` repository.
+Deck CRUD, card CRUD, scheduling, review flow, and settings editing are intentionally deferred to later atomic slices.
 
-## Start Here
+## Run Locally
 
-1. Open `C:\Ranki-PRO` in Codex App.
-2. Make sure the project is trusted.
-3. Start a new thread and use the prompt in `docs/codex/agent-playbook.md`.
+```bash
+pnpm install
+pnpm dev
+```
 
-## Source PRD
+## Checks
+
+```bash
+pnpm lint
+pnpm test
+pnpm build
+```
+
+## Product Sources
 
 - `docs/product/PRD-Offline-Flashcards-2026-03-07.md`
 - `docs/product/ranki-mvp-brief.md`
 
-## Repository Status
+## Codex Workflow
 
-- GitHub SSH push verified on 2026-03-07.
-- Telegram commit notification workflow configured on 2026-03-07.
-- Codex branch-first auto-PR flow smoke-tested on 2026-03-07.
-- Codex auto-merge workflow smoke-tested on 2026-03-07.
+Project instructions and multi-agent prompts live in:
+
+- `AGENTS.md`
+- `docs/codex/agent-playbook.md`
+- `docs/codex/github-automation.md`
