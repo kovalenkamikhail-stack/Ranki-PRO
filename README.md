@@ -42,3 +42,5 @@ Project instructions and multi-agent prompts live in:
 - `AGENTS.md`
 - `docs/codex/agent-playbook.md`
 - `docs/codex/github-automation.md`
+
+Merged `codex/*` pull requests into `main` are expected to produce Telegram notifications for repository updates.
