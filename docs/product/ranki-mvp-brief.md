@@ -6,6 +6,7 @@ Derived on: 2026-03-07
 ## Vision
 
 Build a modern, pleasant, offline-first flashcards app for desktop browser and iPhone PWA use. The experience should preserve the daily-review value of Anki-like tools without inheriting their dated UX.
+The MVP scope is explicitly local-only on each device, with no sync or backend dependency for core study flows.
 
 ## MVP Goals
 
