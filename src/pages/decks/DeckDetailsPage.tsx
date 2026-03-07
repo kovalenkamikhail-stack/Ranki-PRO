@@ -8,8 +8,8 @@ export function DeckDetailsPage() {
     <NotReadyPage
       eyebrow="Deck Details"
       title="Deck workspace reserved"
-      description={`The deck-scoped route for ${deckId ?? '...'} exists now so navigation, deep links, and offline shell caching are in place before deck CRUD lands.`}
-      nextSlice="Deck CRUD will turn this into the real deck management page."
+      description={`The deck-scoped route for ${deckId ?? '...'} now has real deck CRUD feeding into it. Card lists, review entry points, and deck-scoped counts are still intentionally pending.`}
+      nextSlice="Deck details with card list, add-card entry point, and start-review CTA."
     />
   )
 }
