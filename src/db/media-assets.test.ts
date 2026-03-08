@@ -3,8 +3,9 @@ import {
   ALLOWED_BACK_IMAGE_MIME_TYPES,
   MAX_BACK_IMAGE_SOURCE_BYTES,
   MAX_BACK_IMAGE_STORED_BYTES,
-  prepareBackImageDraft,
   createBackImageDraft,
+  normalizeBackImageDraft,
+  prepareBackImageDraft,
   type BackImageProcessingEnvironment,
 } from '@/db/media-assets'
 
@@ -57,6 +58,21 @@ describe('media asset drafts', () => {
         size: 512,
       } as File),
     ).rejects.toThrow('Back image must be a PNG, JPEG, or WebP file.')
+  })
+
+  it('rejects drafts whose declared mime type does not match the blob type', () => {
+    const blob = new Blob(['image-binary'], { type: 'image/png' })
+
+    expect(() =>
+      normalizeBackImageDraft({
+        blob,
+        mimeType: 'image/webp',
+        fileName: 'harbor.webp',
+        sizeBytes: blob.size,
+        width: 1200,
+        height: 900,
+      }),
+    ).toThrow('Back image type does not match the selected file.')
   })
 
   it('rejects files that exceed the source size limit before processing', async () => {
