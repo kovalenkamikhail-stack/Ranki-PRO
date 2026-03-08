@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RankiDb } from '@/db/app-db'
+import { createCard, deleteCardCascade, listCardsByDeck, updateCard } from '@/db/cards'
 import {
-  createCard,
-  deleteCardCascade,
-  listCardsByDeck,
-  updateCard,
-} from '@/db/cards'
-import type { BackImageDraft } from '@/db/media-assets'
+  MAX_BACK_IMAGE_STORED_BYTES,
+  type BackImageDraft,
+} from '@/db/media-assets'
 import type { Card } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
 import type { MediaAsset } from '@/entities/media-asset'
@@ -144,7 +142,15 @@ describe('card read models', () => {
   it('creates a card with one persisted back image and local blob linkage', async () => {
     database = new RankiDb(`ranki-cards-${crypto.randomUUID()}`)
     const deck = buildDeck({ id: 'deck-1', updatedAt: 100 })
-    const backImage = buildBackImageDraft()
+    const optimizedBlob = new Blob(['optimized-image'], { type: 'image/webp' })
+    const backImage = buildBackImageDraft({
+      blob: optimizedBlob,
+      mimeType: 'image/webp',
+      fileName: 'hello.webp',
+      sizeBytes: optimizedBlob.size,
+      width: 1200,
+      height: 900,
+    })
     nowMsMock.mockReturnValue(2_100)
 
     await database.decks.add(deck)
@@ -165,16 +171,17 @@ describe('card read models', () => {
     expect(storedAsset).toMatchObject({
       cardId: createdCard.id,
       kind: 'image',
-      mimeType: 'image/png',
-      fileName: 'hello.png',
+      mimeType: 'image/webp',
+      fileName: 'hello.webp',
       sizeBytes: backImage.sizeBytes,
-      width: null,
-      height: null,
+      width: 1200,
+      height: 900,
       createdAt: 2_100,
     })
 
     const storedBlob = await database.mediaBlobs.get(storedAsset!.blobRef)
     expect(storedBlob).toBeDefined()
+    expect(storedBlob?.blobRef).toBe(storedAsset!.blobRef)
     expect(storedBlob?.createdAt).toBe(2_100)
     expect(storedBlob?.blob).toBeDefined()
   })
@@ -382,6 +389,46 @@ describe('card read models', () => {
         database,
       ),
     ).rejects.toThrow('Back text is required.')
+  })
+
+  it('rejects unsupported or oversized back image drafts before writing to Dexie', async () => {
+    database = new RankiDb(`ranki-cards-${crypto.randomUUID()}`)
+    const deck = buildDeck({ id: 'deck-1' })
+
+    await database.decks.add(deck)
+
+    await expect(
+      createCard(
+        deck.id,
+        {
+          frontText: 'hello',
+          backText: 'hola',
+          backImage: buildBackImageDraft({
+            mimeType: 'image/gif',
+          }),
+        },
+        database,
+      ),
+    ).rejects.toThrow('Back image must be a PNG, JPEG, or WebP file.')
+
+    await expect(
+      createCard(
+        deck.id,
+        {
+          frontText: 'hello',
+          backText: 'hola',
+          backImage: buildBackImageDraft({
+            blob: new Blob([new Uint8Array(MAX_BACK_IMAGE_STORED_BYTES + 1)], {
+              type: 'image/png',
+            }),
+            sizeBytes: MAX_BACK_IMAGE_STORED_BYTES + 1,
+          }),
+        },
+        database,
+      ),
+    ).rejects.toThrow(
+      'Back image must be 2 MB or smaller after local optimization.',
+    )
   })
 
   it('deletes the card and its card-scoped records in one transaction', async () => {

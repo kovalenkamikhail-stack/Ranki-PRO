@@ -1,5 +1,5 @@
 import { ArrowLeft, BookMarked, Rows3, Save, Trash2 } from 'lucide-react'
-import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react'
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CardBackImage } from '@/components/cards/CardBackImage'
 import { Button } from '@/components/ui/button'
@@ -13,8 +13,9 @@ import {
 import { createCard, deleteCardCascade, getCard, updateCard } from '@/db/cards'
 import { getDeck } from '@/db/decks'
 import {
-  createBackImageDraft,
+  BACK_IMAGE_INPUT_ACCEPT,
   getCardBackImage,
+  prepareBackImageDraft,
   type BackImageDraft,
   type CardBackImage as StoredCardBackImage,
 } from '@/db/media-assets'
@@ -119,6 +120,9 @@ export function EditCardPage({ mode }: EditCardPageProps) {
   const [isMissingCard, setIsMissingCard] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isProcessingBackImage, setIsProcessingBackImage] = useState(false)
+  const isProcessingBackImageRef = useRef(false)
+  const backImageRequestIdRef = useRef(0)
   const backImageMeta = getBackImageMeta(backImage)
 
   useEffect(() => {
@@ -209,7 +213,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
     }
   }, [cardId, deckId, mode])
 
-  const handleBackImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleBackImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     event.target.value = ''
 
@@ -217,19 +221,45 @@ export function EditCardPage({ mode }: EditCardPageProps) {
       return
     }
 
-    if (!selectedFile.type.startsWith('image/')) {
-      setSaveError('Back image must be an image file.')
-      return
-    }
-
-    setBackImage({
-      kind: 'draft',
-      image: createBackImageDraft(selectedFile),
-    })
+    const requestId = backImageRequestIdRef.current + 1
+    backImageRequestIdRef.current = requestId
+    isProcessingBackImageRef.current = true
+    setIsProcessingBackImage(true)
     setSaveError(null)
+
+    try {
+      const preparedBackImage = await prepareBackImageDraft(selectedFile)
+
+      if (backImageRequestIdRef.current !== requestId) {
+        return
+      }
+
+      setBackImage({
+        kind: 'draft',
+        image: preparedBackImage,
+      })
+    } catch (nextError: unknown) {
+      if (backImageRequestIdRef.current !== requestId) {
+        return
+      }
+
+      setSaveError(
+        nextError instanceof Error
+          ? nextError.message
+          : 'Failed to prepare the back image.',
+      )
+    } finally {
+      if (backImageRequestIdRef.current === requestId) {
+        isProcessingBackImageRef.current = false
+        setIsProcessingBackImage(false)
+      }
+    }
   }
 
   const handleRemoveBackImage = () => {
+    backImageRequestIdRef.current += 1
+    isProcessingBackImageRef.current = false
+    setIsProcessingBackImage(false)
     setBackImage({ kind: 'none' })
     setSaveError(null)
   }
@@ -257,6 +287,11 @@ export function EditCardPage({ mode }: EditCardPageProps) {
 
     if (mode === 'edit' && !cardId) {
       setSaveError('Missing card id.')
+      return
+    }
+
+    if (isProcessingBackImageRef.current || isProcessingBackImage) {
+      setSaveError('Wait for the back image to finish processing.')
       return
     }
 
@@ -454,8 +489,8 @@ export function EditCardPage({ mode }: EditCardPageProps) {
                   Back image (optional)
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Attach one image to the back of this card. It stays local to
-                  this device in MVP.
+                  Attach one PNG, JPEG, or WebP image up to 12 MB. Large images
+                  are resized locally before they are saved to this device.
                 </p>
               </div>
 
@@ -464,6 +499,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
                   type="button"
                   variant="ghost"
                   onClick={handleRemoveBackImage}
+                  disabled={isProcessingBackImage}
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -476,13 +512,18 @@ export function EditCardPage({ mode }: EditCardPageProps) {
               Choose image
               <input
                 type="file"
-                accept="image/*"
-                onChange={handleBackImageChange}
+                accept={BACK_IMAGE_INPUT_ACCEPT}
+                onChange={(event) => void handleBackImageChange(event)}
+                disabled={isProcessingBackImage}
                 className={inputClassName}
               />
             </label>
 
-            {backImage.kind === 'none' ? (
+            {isProcessingBackImage ? (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Preparing the selected image locally before save.
+              </p>
+            ) : backImage.kind === 'none' ? (
               <p className="mt-4 text-sm text-muted-foreground">
                 No back image attached. Text-only cards still work exactly as
                 before.
@@ -505,7 +546,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
                   </p>
                   <p>
                     {backImage.kind === 'draft'
-                      ? 'This image will be saved when you submit the card.'
+                      ? 'This optimized image will be saved when you submit the card.'
                       : 'This image is already saved locally with the card.'}
                   </p>
                 </div>
@@ -514,7 +555,11 @@ export function EditCardPage({ mode }: EditCardPageProps) {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button type="submit" size="lg" disabled={isSaving}>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSaving || isProcessingBackImage}
+            >
               <Save className="mr-2 h-4 w-4" />
               {mode === 'create'
                 ? isSaving

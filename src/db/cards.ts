@@ -1,6 +1,9 @@
 import Dexie from 'dexie'
 import { appDb, type RankiDb } from '@/db/app-db'
-import type { BackImageDraft } from '@/db/media-assets'
+import {
+  normalizeBackImageDraft,
+  type BackImageDraft,
+} from '@/db/media-assets'
 import type { Card } from '@/entities/card'
 import type { MediaAsset } from '@/entities/media-asset'
 import type { MediaBlob } from '@/entities/media-blob'
@@ -28,25 +31,6 @@ function normalizeCardDraft(draft: CardDraft) {
   return {
     frontText,
     backText,
-  }
-}
-
-function normalizeBackImageDraft(backImage: BackImageDraft) {
-  if (!backImage.mimeType.startsWith('image/')) {
-    throw new Error('Back image must be an image file.')
-  }
-
-  if (!Number.isInteger(backImage.sizeBytes) || backImage.sizeBytes <= 0) {
-    throw new Error('Back image size is invalid.')
-  }
-
-  return {
-    blob: backImage.blob,
-    mimeType: backImage.mimeType,
-    fileName: backImage.fileName?.trim() || null,
-    sizeBytes: backImage.sizeBytes,
-    width: backImage.width ?? null,
-    height: backImage.height ?? null,
   }
 }
 
