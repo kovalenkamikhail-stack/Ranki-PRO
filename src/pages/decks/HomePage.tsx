@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/card'
 import { bootstrapAppDb } from '@/db/bootstrap'
 import { deleteDeckCascade, listDecks } from '@/db/decks'
+import { loadDeckStudySession } from '@/db/study-session'
 import type { Deck } from '@/entities/deck'
 
 function formatUpdatedAt(timestamp: number) {
@@ -29,6 +30,9 @@ function formatUpdatedAt(timestamp: number) {
 
 export function HomePage() {
   const [decks, setDecks] = useState<Deck[]>([])
+  const [studyCountsByDeckId, setStudyCountsByDeckId] = useState<
+    Record<string, { dueCount: number; newCount: number }>
+  >({})
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null)
@@ -38,9 +42,24 @@ export function HomePage() {
 
     void bootstrapAppDb()
       .then(() => listDecks())
-      .then((nextDecks) => {
+      .then(async (nextDecks) => {
+        const studyCountsEntries = await Promise.all(
+          nextDecks.map(async (deck) => {
+            const session = await loadDeckStudySession(deck.id)
+
+            return [
+              deck.id,
+              {
+                dueCount: session?.queue.dueCards.length ?? 0,
+                newCount: session?.queue.newCards.length ?? 0,
+              },
+            ] as const
+          }),
+        )
+
         if (isMounted) {
           setDecks(nextDecks)
+          setStudyCountsByDeckId(Object.fromEntries(studyCountsEntries))
           setIsLoading(false)
         }
       })
@@ -75,6 +94,11 @@ export function HomePage() {
       setDecks((currentDecks) =>
         currentDecks.filter((currentDeck) => currentDeck.id !== deck.id),
       )
+      setStudyCountsByDeckId((currentCounts) => {
+        const nextCounts = { ...currentCounts }
+        delete nextCounts[deck.id]
+        return nextCounts
+      })
     } catch (nextError: unknown) {
       setError(
         nextError instanceof Error ? nextError.message : 'Failed to delete deck.',
@@ -102,7 +126,7 @@ export function HomePage() {
               <CardDescription className="max-w-2xl text-base">
                 Create, rename, and delete decks offline. Each deck now opens
                 into a real local workspace with text-first card CRUD, while
-                study flow stays in separate MVP slices.
+                study counters now reflect the existing deck-scoped session seam.
               </CardDescription>
             </div>
           </CardHeader>
@@ -137,7 +161,7 @@ export function HomePage() {
                 </p>
                 <p className="mt-2 text-xl font-semibold">No cards yet</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Study logic still stays out of scope here.
+                  Due and new counters now read from the study queue.
                 </p>
               </div>
             </div>
@@ -222,7 +246,8 @@ export function HomePage() {
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
                 Create the first deck to start building a local study library.
                 Each deck opens into a real workspace with card CRUD, while
-                review scheduling still lands in later MVP slices.
+                due and new counters now come straight from the saved study
+                queue.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button asChild>
@@ -274,7 +299,17 @@ export function HomePage() {
                 <CardContent className="space-y-4">
                   <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
                     Stored locally with deck settings defaults ready. Open the
-                    deck to inspect its workspace shell and local card list.
+                    deck to inspect its workspace shell, local card list, and
+                    deck-scoped study counts.
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <Badge variant="outline">
+                      Due {studyCountsByDeckId[deck.id]?.dueCount ?? 0}
+                    </Badge>
+                    <Badge variant="outline">
+                      New {studyCountsByDeckId[deck.id]?.newCount ?? 0}
+                    </Badge>
                   </div>
 
                   <div className="flex flex-wrap gap-3">
