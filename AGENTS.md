@@ -129,6 +129,7 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - Product and feature work must not be pushed directly to `main`.
 - If the current branch is `main` or a detached HEAD, create a fresh feature branch using the `codex/<slice-name>` pattern before committing.
 - Never reuse an existing `codex/*` branch for a new slice unless the parent explicitly says to continue that exact branch.
+- Once a `codex/*` branch has already been merged into `main`, treat it as closed forever. Any follow-up fix must start on a new branch, even if the fix is tiny.
 - If the preferred `codex/<slice-name>` branch already exists locally or on `origin`, create a new unique branch by appending a short suffix instead of reusing the old branch.
 - Before pushing, compare the branch against `origin/main`; if files outside the current slice appear in the diff, stop and fix the branch hygiene before shipping.
 - Push feature branches to `origin`; GitHub automation will create or update the PR into `main`.
