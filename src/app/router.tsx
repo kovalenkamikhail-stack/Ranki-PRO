@@ -9,6 +9,7 @@ import { ReadingDocumentPage } from '@/pages/reading/ReadingDocumentPage'
 import { ReadingLibraryPage } from '@/pages/reading/ReadingLibraryPage'
 import { NotFoundPage } from '@/pages/shared/NotFoundPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { StatisticsPage } from '@/pages/statistics/StatisticsPage'
 import { StudySessionPage } from '@/pages/study/StudySessionPage'
 
 export const router = createBrowserRouter([
@@ -56,6 +57,10 @@ export const router = createBrowserRouter([
       {
         path: 'reading/:documentId',
         element: <ReadingDocumentPage />,
+      },
+      {
+        path: 'statistics',
+        element: <StatisticsPage />,
       },
       {
         path: '*',

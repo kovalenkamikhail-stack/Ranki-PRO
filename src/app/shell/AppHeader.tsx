@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   BookOpenText,
   BookText,
   Cog,
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { to: '/', label: 'Decks', icon: LibraryBig },
   { to: '/reading', label: 'Reading', icon: BookText },
+  { to: '/statistics', label: 'Statistics', icon: BarChart3 },
   { to: '/settings', label: 'Settings', icon: Cog },
 ] as const
 
@@ -35,11 +37,12 @@ export function AppHeader() {
 
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Calm study and reading that stay with you offline.
+                Calm study, reading, and local insight that stay with you offline.
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Decks, text-first cards, and local reading documents now persist
-                on this device without sync or cloud dependencies.
+                Decks, text-first cards, local reading documents, and study
+                activity now persist on this device without sync or cloud
+                dependencies.
               </p>
             </div>
           </div>
