@@ -1,6 +1,6 @@
 import { ArrowLeft, BookMarked, Rows3, Save, Trash2 } from 'lucide-react'
-import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { CardBackImage } from '@/components/cards/CardBackImage'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,6 +21,10 @@ import {
 } from '@/db/media-assets'
 import type { Card as CardRecord } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
+import {
+  hasQuickCaptureContent,
+  parseQuickCaptureSearchParams,
+} from '@/lib/quick-capture'
 
 interface EditCardPageProps {
   mode: 'create' | 'edit'
@@ -105,7 +109,16 @@ function EditorUnavailableState({
 
 export function EditCardPage({ mode }: EditCardPageProps) {
   const { deckId, cardId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
+  const hasCaptureQuery = location.search.length > 1
+  const quickCapture = useMemo(
+    () =>
+      mode === 'create'
+        ? parseQuickCaptureSearchParams(new URLSearchParams(location.search))
+        : null,
+    [location.search, mode],
+  )
   const [deck, setDeck] = useState<Deck | null>(null)
   const [card, setCard] = useState<CardRecord | null>(null)
   const [frontText, setFrontText] = useState('')
@@ -121,6 +134,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isProcessingBackImage, setIsProcessingBackImage] = useState(false)
+  const appliedQuickCapturePrefillRef = useRef(false)
   const isProcessingBackImageRef = useRef(false)
   const backImageRequestIdRef = useRef(0)
   const backImageMeta = getBackImageMeta(backImage)
@@ -139,6 +153,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
     }
 
     let isMounted = true
+    appliedQuickCapturePrefillRef.current = false
 
     const loadEditor = async () => {
       const nextDeck = await getDeck(deckId)
@@ -154,6 +169,18 @@ export function EditCardPage({ mode }: EditCardPageProps) {
         if (isMounted) {
           setDeck(nextDeck)
           setBackImage({ kind: 'none' })
+
+          if (
+            hasCaptureQuery &&
+            quickCapture &&
+            quickCapture.errors.length === 0 &&
+            hasQuickCaptureContent(quickCapture.payload) &&
+            !appliedQuickCapturePrefillRef.current
+          ) {
+            setFrontText(quickCapture.payload.frontText)
+            setBackText(quickCapture.payload.backText)
+            appliedQuickCapturePrefillRef.current = true
+          }
         }
         return
       }
@@ -211,7 +238,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
     return () => {
       isMounted = false
     }
-  }, [cardId, deckId, mode])
+  }, [cardId, deckId, hasCaptureQuery, mode, quickCapture])
 
   const handleBackImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -459,6 +486,43 @@ export function EditCardPage({ mode }: EditCardPageProps) {
             className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive"
           >
             {saveError}
+          </div>
+        ) : null}
+
+        {mode === 'create' && hasCaptureQuery && quickCapture?.errors.length ? (
+          <div
+            role="alert"
+            className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive"
+          >
+            <p className="font-medium">Quick capture prefill could not be used.</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {quickCapture.errors.map((captureError) => (
+                <li key={captureError}>{captureError}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {mode === 'create' &&
+        hasCaptureQuery &&
+        quickCapture?.errors.length === 0 &&
+        hasQuickCaptureContent(quickCapture.payload) ? (
+          <div className="rounded-[1.4rem] border border-primary/20 bg-primary/[0.06] p-4 text-sm leading-6 text-foreground">
+            <p className="font-medium">Quick capture draft</p>
+            <p className="mt-2 text-muted-foreground">
+              Front and back text were prefilled from the incoming capture URL.
+              Nothing saves automatically here.
+            </p>
+            {quickCapture.payload.contextText ? (
+              <div className="mt-4 rounded-[1.2rem] border border-border/70 bg-background/80 p-4">
+                <p className="text-sm font-medium text-foreground">
+                  Captured context (not auto-saved)
+                </p>
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
+                  {quickCapture.payload.contextText}
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
