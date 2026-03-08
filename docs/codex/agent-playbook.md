@@ -17,6 +17,12 @@ This repository is configured for Codex multi-agent work.
 - `docs/product/ranki-mvp-brief.md`
   - In-repo working summary of the source PRD.
 
+## Local Orchestration Handoff
+
+- Use `C:\Users\micha\.codex\handoffs\Ranki-PRO\chat-handoff.md` as the local-only memory bridge for verification, orchestration, and handoff chats.
+- Keep that file outside the repository. Do not store private chat-memory notes under `docs/` or anywhere else in the repo.
+- If the file does not exist yet on a machine, create it at that local path instead of adding a repo-tracked handoff file.
+
 ## Before Using In Codex App
 
 1. Open `C:\Ranki-PRO` in Codex App.
@@ -41,6 +47,19 @@ This repository is configured for Codex multi-agent work.
 - `monitor`
 
 ## Suggested Prompt Patterns
+
+### Orchestration handoff chat
+
+```text
+Read C:\Users\micha\.codex\handoffs\Ranki-PRO\chat-handoff.md first.
+Then read:
+- C:\Ranki-PRO\AGENTS.md
+- C:\Ranki-PRO\docs\codex\agent-playbook.md
+- C:\Ranki-PRO\docs\codex\github-automation.md
+
+Treat this chat as the verification/orchestration partner for Ranki.
+Before deciding anything, inspect git status and first-parent main history.
+```
 
 ### Product planning
 

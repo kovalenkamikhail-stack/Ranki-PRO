@@ -15,6 +15,7 @@ This repository uses a branch-first workflow for product work.
 - Treat the remote repository as public by default.
 - Only publish code, docs, and assets that are intentionally safe to expose.
 - Never push secrets, credentials, `.env` data, browser exports, local databases, captured user content, or personal screenshots/logs.
+- Keep orchestration and verification chat memory in `C:\Users\micha\.codex\handoffs\Ranki-PRO\chat-handoff.md`, not anywhere inside `C:\Ranki-PRO`.
 - If a task needs private reference material, sanitize or summarize it first instead of committing the raw file.
 
 ## Workflows
