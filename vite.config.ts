@@ -6,6 +6,24 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep the sql.js wasm URL stable so cached shells do not chase a missing hashed asset.
+        assetFileNames: (assetInfo) => {
+          const assetNames = [assetInfo.name, ...(assetInfo.names ?? [])].filter(
+            (name): name is string => Boolean(name),
+          )
+
+          return assetNames.some((name) =>
+            /^sql-wasm(?:-browser)?\.wasm$/i.test(name),
+          )
+            ? 'assets/[name][extname]'
+            : 'assets/[name]-[hash][extname]'
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -44,7 +62,7 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: 'index.html',
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,wasm}'],
       },
     }),
   ],

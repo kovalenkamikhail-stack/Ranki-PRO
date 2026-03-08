@@ -1,6 +1,5 @@
 import { unzipSync } from 'fflate'
 import initSqlJs from 'sql.js'
-import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url'
 import { appDb, type RankiDb } from '@/db/app-db'
 import { createCard, type CardDraft } from '@/db/cards'
 import { createDeck } from '@/db/decks'
@@ -14,6 +13,7 @@ import {
   buildImportedCardContent,
   splitAnkiFields,
 } from '@/importers/anki-apkg-mapping'
+import { locateSqlJsFile } from '@/importers/sqljs-wasm-url'
 
 interface SqlJsDatabase {
   exec(sql: string): Array<{
@@ -55,7 +55,7 @@ let sqlJsPromise: Promise<{
 
 function getSqlJs() {
   sqlJsPromise ??= initSqlJs({
-    locateFile: () => sqlWasmUrl,
+    locateFile: locateSqlJsFile,
   })
 
   return sqlJsPromise
