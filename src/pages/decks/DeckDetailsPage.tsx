@@ -25,6 +25,7 @@ import { getDeck } from '@/db/decks'
 import { loadDeckStudySession } from '@/db/study-session'
 import type { Card as DeckCard, CardState } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
+import { getDeckStudySummary, type DeckStudySummary } from '@/pages/decks/study-summary'
 
 const timestampFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -34,6 +35,8 @@ const timestampFormatter = new Intl.DateTimeFormat(undefined, {
 function formatTimestamp(timestamp: number) {
   return timestampFormatter.format(timestamp)
 }
+
+const EMPTY_STUDY_SUMMARY = getDeckStudySummary(null)
 
 function formatCardState(state: CardState) {
   if (state === 'learning') {
@@ -110,10 +113,9 @@ function MissingDeckIdState() {
 function DeckWorkspace({ deckId }: { deckId: string }) {
   const [deck, setDeck] = useState<Deck | null>(null)
   const [cards, setCards] = useState<DeckCard[]>([])
-  const [studyCounts, setStudyCounts] = useState({
-    dueCount: 0,
-    newCount: 0,
-  })
+  const [studySummary, setStudySummary] = useState<DeckStudySummary>(
+    EMPTY_STUDY_SUMMARY,
+  )
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -143,10 +145,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
 
         setDeck(nextDeck)
         setCards(nextCards)
-        setStudyCounts({
-          dueCount: nextSession?.queue.dueCards.length ?? 0,
-          newCount: nextSession?.queue.newCards.length ?? 0,
-        })
+        setStudySummary(getDeckStudySummary(nextSession))
       })
       .catch((nextError: unknown) => {
         if (isMounted) {
@@ -193,10 +192,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
         setDeck(refreshedDeck)
       }
 
-      setStudyCounts({
-        dueCount: refreshedSession?.queue.dueCards.length ?? 0,
-        newCount: refreshedSession?.queue.newCards.length ?? 0,
-      })
+      setStudySummary(getDeckStudySummary(refreshedSession))
     } catch (nextError: unknown) {
       setActionError(
         nextError instanceof Error ? nextError.message : 'Failed to delete card.',
@@ -313,7 +309,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                   Due today
                 </p>
                 <p className="mt-2 text-3xl font-semibold">
-                  {studyCounts.dueCount}
+                  {studySummary.dueCount}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Eligible due cards from the saved study queue.
@@ -324,7 +320,9 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                 <p className="text-sm font-medium text-muted-foreground">
                   New today
                 </p>
-                <p className="mt-2 text-3xl font-semibold">{studyCounts.newCount}</p>
+                <p className="mt-2 text-3xl font-semibold">
+                  {studySummary.newCount}
+                </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Available new cards after current limits.
                 </p>
@@ -339,6 +337,20 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                   Listed directly from IndexedDB for this deck.
                 </p>
               </div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Study status
+                </p>
+                <Badge variant={studySummary.statusVariant}>
+                  {studySummary.statusLabel}
+                </Badge>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                {studySummary.statusDetail}
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
