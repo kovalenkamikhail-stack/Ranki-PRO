@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { RankiDb } from '@/db/app-db'
-import { bootstrapAppDb } from '@/db/bootstrap'
+import { getAppSettings, updateAppSettings } from '@/db/settings'
 import {
   loadDeckStudySession,
   reviewDeckStudyCard,
 } from '@/db/study-session'
-import type { AppSettings } from '@/entities/app-settings'
 import type { Card } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
 import type { ReviewLog, ReviewRating } from '@/entities/review-log'
@@ -64,18 +63,6 @@ function buildReviewLog(overrides: Partial<ReviewLog> = {}): ReviewLog {
   }
 }
 
-async function updateSettings(
-  database: RankiDb,
-  overrides: Partial<AppSettings> = {},
-) {
-  const settings = await bootstrapAppDb(database)
-
-  await database.appSettings.put({
-    ...settings,
-    ...overrides,
-  })
-}
-
 describe('study-session persistence seam', () => {
   let database: RankiDb | undefined
 
@@ -93,10 +80,14 @@ describe('study-session persistence seam', () => {
     const yesterday = new Date(2026, 2, 7, 18, 0, 0, 0).getTime()
     const deck = buildDeck({ id: 'deck-1' })
 
-    await updateSettings(database, {
-      globalNewCardsPerDay: 2,
-      globalMaxReviewsPerDay: 3,
-    })
+    await getAppSettings(database)
+    await updateAppSettings(
+      {
+        globalNewCardsPerDay: 2,
+        globalMaxReviewsPerDay: 3,
+      },
+      database,
+    )
     await database.decks.add(deck)
     await database.cards.bulkAdd([
       buildCard({
@@ -195,6 +186,60 @@ describe('study-session persistence seam', () => {
     })
   })
 
+  it('prefers persisted deck override limits over global defaults', async () => {
+    database = new RankiDb(`ranki-study-session-${crypto.randomUUID()}`)
+    const now = new Date(2026, 2, 8, 12, 0, 0, 0).getTime()
+    const deck = buildDeck({
+      id: 'deck-1',
+      useGlobalLimits: false,
+      newCardsPerDayOverride: 1,
+      maxReviewsPerDayOverride: 1,
+    })
+
+    await getAppSettings(database)
+    await updateAppSettings(
+      {
+        globalNewCardsPerDay: 10,
+        globalMaxReviewsPerDay: null,
+      },
+      database,
+    )
+    await database.decks.add(deck)
+    await database.cards.bulkAdd([
+      buildCard({
+        id: 'due-1',
+        deckId: deck.id,
+        state: 'review',
+        ladderStepIndex: 1,
+        dueAt: now - 2_000,
+      }),
+      buildCard({
+        id: 'due-2',
+        deckId: deck.id,
+        state: 'review',
+        ladderStepIndex: 1,
+        dueAt: now - 1_000,
+      }),
+      buildCard({
+        id: 'new-1',
+        deckId: deck.id,
+        createdAt: 10,
+      }),
+      buildCard({
+        id: 'new-2',
+        deckId: deck.id,
+        createdAt: 20,
+      }),
+    ])
+
+    const session = await loadDeckStudySession(deck.id, now, database)
+
+    expect(session?.queue.dueCards.map((card) => card.id)).toEqual(['due-1'])
+    expect(session?.queue.newCards.map((card) => card.id)).toEqual(['new-1'])
+    expect(session?.limits.newCardsPerDay).toBe(1)
+    expect(session?.limits.maxReviewsPerDay).toBe(1)
+  })
+
   it.each<
     [
       label: string,
@@ -272,7 +317,7 @@ describe('study-session persistence seam', () => {
     const now = new Date(2026, 2, 8, 12, 0, 0, 0).getTime()
     const deck = buildDeck({ id: 'deck-1' })
 
-    await bootstrapAppDb(database)
+    await getAppSettings(database)
     await database.decks.add(deck)
     await database.cards.add(card)
 
@@ -317,7 +362,7 @@ describe('study-session persistence seam', () => {
     const now = new Date(2026, 2, 8, 12, 0, 0, 0).getTime()
     const deck = buildDeck({ id: 'deck-1' })
 
-    await bootstrapAppDb(database)
+    await getAppSettings(database)
     await database.decks.add(deck)
     await database.cards.bulkAdd([
       buildCard({
@@ -368,7 +413,7 @@ describe('study-session persistence seam', () => {
     const now = new Date(2026, 2, 8, 12, 0, 0, 0).getTime()
     const deck = buildDeck({ id: 'deck-1' })
 
-    await bootstrapAppDb(database)
+    await getAppSettings(database)
     await database.decks.add(deck)
 
     const session = await loadDeckStudySession(deck.id, now, database)
@@ -386,7 +431,7 @@ describe('study-session persistence seam', () => {
     const nextRetryAt = now + HARD_RETRY_DELAY_MS
     const deck = buildDeck({ id: 'deck-1' })
 
-    await bootstrapAppDb(database)
+    await getAppSettings(database)
     await database.decks.add(deck)
     await database.cards.add(
       buildCard({
