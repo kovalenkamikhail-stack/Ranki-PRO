@@ -27,10 +27,11 @@ import { getCardBackImage, type CardBackImage as StoredCardBackImage } from '@/d
 import {
   loadDeckStudySession,
   reviewDeckStudyCard,
+  type DeckStudyReviewOutcome,
   type DeckStudySessionSnapshot,
 } from '@/db/study-session'
 import type { CardState } from '@/entities/card'
-import type { ReviewRating } from '@/entities/review-log'
+import type { ReviewLog, ReviewRating } from '@/entities/review-log'
 import { nowMs } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
@@ -98,6 +99,13 @@ const reviewActions: Array<{
   },
 ]
 
+const reviewRatingLabels: Record<ReviewRating, string> = {
+  again: 'Again',
+  hard: 'Hard',
+  good: 'Good',
+  easy: 'Easy',
+}
+
 function formatTimestamp(timestamp: number) {
   return timestampFormatter.format(timestamp)
 }
@@ -131,6 +139,148 @@ function formatCountdown(targetTimestamp: number, currentTimestamp: number) {
   }
 
   return `${minutes}m ${seconds.toString().padStart(2, '0')}s`
+}
+
+function formatDelayFromMs(delayMs: number) {
+  const normalizedDelayMs = Math.max(delayMs, 0)
+  const totalMinutes = Math.round(normalizedDelayMs / 60_000)
+
+  if (totalMinutes < 1) {
+    return 'under a minute'
+  }
+
+  if (totalMinutes < 60) {
+    return `${totalMinutes} minute${totalMinutes === 1 ? '' : 's'}`
+  }
+
+  const totalHours = normalizedDelayMs / 3_600_000
+
+  if (totalHours < 24) {
+    const roundedHours = Math.round(totalHours)
+
+    return `${roundedHours} hour${roundedHours === 1 ? '' : 's'}`
+  }
+
+  const totalDays = normalizedDelayMs / (24 * 3_600_000)
+  const roundedDays = Math.round(totalDays)
+
+  return `${roundedDays} day${roundedDays === 1 ? '' : 's'}`
+}
+
+function formatStepLabel(stepIndex: number | null) {
+  return stepIndex === null ? 'No long-term step' : `Step ${stepIndex + 1}`
+}
+
+function getLadderSummary(reviewLog: ReviewLog) {
+  if (reviewLog.rating === 'again') {
+    return reviewLog.previousLadderStepIndex === null
+      ? 'No long-term step yet'
+      : `Reset from ${formatStepLabel(reviewLog.previousLadderStepIndex)}`
+  }
+
+  if (reviewLog.rating === 'hard') {
+    return reviewLog.newLadderStepIndex === null
+      ? 'No long-term step yet'
+      : `${formatStepLabel(reviewLog.newLadderStepIndex)} unchanged`
+  }
+
+  if (reviewLog.previousLadderStepIndex === null) {
+    return `Started ${formatStepLabel(reviewLog.newLadderStepIndex)}`
+  }
+
+  if (reviewLog.previousLadderStepIndex === reviewLog.newLadderStepIndex) {
+    return `Stayed on ${formatStepLabel(reviewLog.newLadderStepIndex)}`
+  }
+
+  return `${formatStepLabel(reviewLog.previousLadderStepIndex)} -> ${formatStepLabel(reviewLog.newLadderStepIndex)}`
+}
+
+function getLadderDetail(reviewLog: ReviewLog) {
+  if (reviewLog.newLadderStepIndex === null) {
+    return 'This card stays on a short retry instead of a long-term step.'
+  }
+
+  if (reviewLog.rating === 'hard') {
+    return 'The long-term step stayed the same while the card moved into learning.'
+  }
+
+  if (reviewLog.previousLadderStepIndex === null) {
+    return 'This rating placed the card onto the long-term ladder.'
+  }
+
+  return 'Shown from the saved review log for this card.'
+}
+
+function LastRatingResultPanel({
+  outcome,
+}: {
+  outcome: DeckStudyReviewOutcome
+}) {
+  const ratingLabel = reviewRatingLabels[outcome.reviewLog.rating]
+  const transitionLabel = `${formatCardState(outcome.reviewLog.previousState)} -> ${formatCardState(outcome.reviewLog.newState)}`
+  const scheduledDueAt = outcome.reviewLog.newDueAt ?? outcome.updatedCard.dueAt
+  const nextDueDelay =
+    scheduledDueAt === null
+      ? null
+      : scheduledDueAt - outcome.reviewLog.reviewedAt
+
+  return (
+    <Card
+      role="status"
+      aria-live="polite"
+      className="overflow-hidden border-primary/18 bg-primary/[0.045] shadow-[0_18px_52px_rgba(18,35,33,0.06)]"
+    >
+      <CardHeader className="gap-4 border-b border-primary/10 bg-background/64">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="accent">Saved locally</Badge>
+          <Badge variant="outline">{ratingLabel}</Badge>
+          <Badge variant="outline">{transitionLabel}</Badge>
+        </div>
+        <div className="space-y-2">
+          <CardTitle className="text-xl">Last rating result</CardTitle>
+          <CardDescription className="max-w-2xl text-sm leading-6">
+            {ratingLabel} moved {outcome.updatedCard.frontText} from{' '}
+            {formatCardState(outcome.reviewLog.previousState)} to{' '}
+            {formatCardState(outcome.reviewLog.newState)}.
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-5">
+        <div className="rounded-[1.5rem] border border-primary/12 bg-background/78 p-4">
+          <div className="flex items-start gap-3">
+            <Clock3 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+            <div>
+              <p className="text-sm font-medium leading-6 text-foreground">
+                {nextDueDelay === null
+                  ? 'Next due timing was not saved for this review.'
+                  : `Next due in ${formatDelayFromMs(nextDueDelay)}.`}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {scheduledDueAt === null
+                  ? 'This review result did not include a follow-up timestamp.'
+                  : `Scheduled for ${formatTimestamp(scheduledDueAt)} on this device.`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <MetricTile
+            label="Ladder"
+            value={getLadderSummary(outcome.reviewLog)}
+            detail={getLadderDetail(outcome.reviewLog)}
+            valueClassName="text-lg"
+          />
+          <MetricTile
+            label="State"
+            value={transitionLabel}
+            detail="Taken directly from the saved review log transition."
+            valueClassName="text-lg"
+          />
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 function MetricTile({
@@ -235,6 +385,8 @@ function SessionStateCard({
 
 function StudySessionWorkspace({ deckId }: { deckId: string }) {
   const [session, setSession] = useState<DeckStudySessionSnapshot | null>(null)
+  const [lastReviewOutcome, setLastReviewOutcome] =
+    useState<DeckStudyReviewOutcome | null>(null)
   const [currentBackImage, setCurrentBackImage] =
     useState<StoredCardBackImage | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -275,6 +427,7 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
     setIsMissing(false)
     setLoadError(null)
     setActionError(null)
+    setLastReviewOutcome(null)
 
     void loadDeckStudySession(deckId)
       .then((nextSession) => {
@@ -394,13 +547,15 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
     setActionError(null)
 
     try {
-      const nextSession = await reviewDeckStudyCard({
+      const reviewResult = await reviewDeckStudyCard({
         deckId,
         cardId: session.currentCard.id,
         rating,
       })
 
-      setSession(nextSession)
+      setIsAnswerRevealed(false)
+      setSession(reviewResult.session)
+      setLastReviewOutcome(reviewResult.outcome)
     } catch (nextError: unknown) {
       setActionError(
         nextError instanceof Error
@@ -600,6 +755,12 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
             />
           </div>
 
+          {lastReviewOutcome ? (
+            <div className="mt-6">
+              <LastRatingResultPanel outcome={lastReviewOutcome} />
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap gap-3">
             {isDeckEmpty ? (
               <Button asChild>
@@ -701,6 +862,10 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
         </CardHeader>
 
         <CardContent className="space-y-6 pt-6">
+          {lastReviewOutcome ? (
+            <LastRatingResultPanel outcome={lastReviewOutcome} />
+          ) : null}
+
           <div className="grid gap-3 sm:grid-cols-3">
             <MetricTile
               label="Ready now"
@@ -901,8 +1066,10 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
               </div>
             </section>
           ) : (
-            <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-muted/24 p-4 text-sm leading-6 text-muted-foreground">
-              Reveal the answer to unlock the rating choices.
+            <div className="space-y-3">
+              <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-muted/24 p-4 text-sm leading-6 text-muted-foreground">
+                Reveal the answer to unlock the rating choices.
+              </div>
             </div>
           )}
 

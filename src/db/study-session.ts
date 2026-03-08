@@ -29,6 +29,16 @@ export interface DeckStudySessionSnapshot {
   limits: DeckStudySessionLimits
 }
 
+export interface DeckStudyReviewOutcome {
+  updatedCard: Card
+  reviewLog: ReviewLog
+}
+
+export interface ReviewDeckStudyCardResult {
+  session: DeckStudySessionSnapshot
+  outcome: DeckStudyReviewOutcome
+}
+
 export interface ReviewDeckStudyCardOptions {
   deckId: string
   cardId: string
@@ -190,8 +200,9 @@ export async function loadDeckStudySession(
 export async function reviewDeckStudyCard(
   options: ReviewDeckStudyCardOptions,
   database: RankiDb = appDb,
-): Promise<DeckStudySessionSnapshot> {
+): Promise<ReviewDeckStudyCardResult> {
   const reviewedAt = options.now ?? nowMs()
+  let outcome: DeckStudyReviewOutcome | null = null
 
   await bootstrapAppDb(database)
 
@@ -218,16 +229,22 @@ export async function reviewDeckStudyCard(
         options.rating,
         reviewedAt,
       )
-
-      await database.cards.put(updatedCard)
-      await database.reviewLogs.add({
+      const persistedReviewLog: ReviewLog = {
         id: createId(),
         ...reviewLog,
-      })
+      }
+
+      await database.cards.put(updatedCard)
+      await database.reviewLogs.add(persistedReviewLog)
       await database.decks.put({
         ...deck,
         updatedAt: reviewedAt,
       })
+
+      outcome = {
+        updatedCard,
+        reviewLog: persistedReviewLog,
+      }
     },
   )
 
@@ -237,7 +254,14 @@ export async function reviewDeckStudyCard(
     throw new Error('Deck not found.')
   }
 
-  return session
+  if (!outcome) {
+    throw new Error('Review outcome was not persisted.')
+  }
+
+  return {
+    session,
+    outcome,
+  }
 }
 
 export async function applyStudySessionRating(
@@ -246,7 +270,7 @@ export async function applyStudySessionRating(
   rating: ReviewRating,
   database: RankiDb = appDb,
   now?: number,
-): Promise<DeckStudySessionSnapshot> {
+): Promise<ReviewDeckStudyCardResult> {
   return reviewDeckStudyCard(
     {
       deckId,

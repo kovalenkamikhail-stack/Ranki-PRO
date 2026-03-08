@@ -321,7 +321,7 @@ describe('study-session persistence seam', () => {
     await database.decks.add(deck)
     await database.cards.add(card)
 
-    await reviewDeckStudyCard(
+    const result = await reviewDeckStudyCard(
       {
         deckId: deck.id,
         cardId: card.id,
@@ -334,6 +334,26 @@ describe('study-session persistence seam', () => {
     const storedCard = await database.cards.get(card.id)
     const reviewLogs = await database.reviewLogs.toArray()
 
+    expect(result.outcome.updatedCard).toMatchObject({
+      ...card,
+      state: expected.state,
+      ladderStepIndex: expected.ladderStepIndex,
+      dueAt: expected.dueAt(now),
+      lastReviewedAt: now,
+      updatedAt: now,
+    })
+    expect(result.outcome.reviewLog).toMatchObject({
+      cardId: card.id,
+      deckId: deck.id,
+      rating,
+      previousState: card.state,
+      newState: expected.state,
+      previousLadderStepIndex: card.ladderStepIndex,
+      newLadderStepIndex: expected.ladderStepIndex,
+      reviewedAt: now,
+      previousDueAt: card.dueAt,
+      newDueAt: expected.dueAt(now),
+    })
     expect(storedCard).toMatchObject({
       ...card,
       state: expected.state,
@@ -391,7 +411,7 @@ describe('study-session persistence seam', () => {
       }),
     ])
 
-    const session = await reviewDeckStudyCard(
+    const result = await reviewDeckStudyCard(
       {
         deckId: deck.id,
         cardId: 'first-due',
@@ -401,8 +421,8 @@ describe('study-session persistence seam', () => {
       database,
     )
 
-    expect(session.currentCard?.id).toBe('second-due')
-    expect(session.queue.cards.map((card) => card.id)).toEqual([
+    expect(result.session.currentCard?.id).toBe('second-due')
+    expect(result.session.queue.cards.map((card) => card.id)).toEqual([
       'second-due',
       'new-card',
     ])
