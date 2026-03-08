@@ -123,6 +123,13 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - After a slice is implemented, run the relevant checks, review it, create or switch to a `codex/<slice-name>` branch, stage only that slice, commit it, push the branch, and only then move to the next slice.
 - `shipper` is responsible only for branch/commit/push.
 - `monitor` or the parent agent is responsible for waiting on PR creation, status checks, auto-merge, merge completion, and returning the local checkout to `main`.
+- A slice is not fully closed after merge until the local checkout has been reconciled too:
+  - switch to `main`
+  - `git fetch origin`
+  - fast-forward local `main` to `origin/main`
+  - verify `git status --short --branch`
+  - verify recent first-parent `main` history
+- If local changes block that post-merge sync, stop and report the exact blocker instead of silently continuing on a stale checkout.
 - If commit or push fails, stop and report the blocker instead of starting the next slice.
 - Because this repository may have unrelated changes, never use broad staging commands that can capture the whole worktree by accident.
 
@@ -138,6 +145,7 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - `main` should move through GitHub PR auto-merge after checks, not through direct feature pushes.
 - Direct pushes to `main` are reserved for repository administration tasks only and require explicit parent instruction.
 - After a feature PR merges, the parent or `monitor` should return the local checkout to `main` and fast-forward it to `origin/main`.
+- Do not treat “merged on GitHub” as sufficient closure by itself; post-merge local sync is part of the expected workflow.
 
 ## External PR Policy
 

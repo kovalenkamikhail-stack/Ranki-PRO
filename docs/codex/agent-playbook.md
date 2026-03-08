@@ -118,7 +118,7 @@ If the checks pass, use shipper to create a fresh codex/<slice-name> branch for 
 Do not reuse an older codex/* branch unless the prompt explicitly says to continue it.
 If a codex/* branch has already been merged into main, never continue it for a follow-up fix; create a new branch even for a tiny correction.
 Stage only the files from that slice, make one commit, and push that branch.
-Use monitor or the parent agent to wait for GitHub automation to open or update the PR, watch checks, and confirm auto-merge into main.
+Use monitor or the parent agent to wait for GitHub automation to open or update the PR, watch checks, confirm auto-merge into main, and then reconcile the local checkout by switching to `main`, fetching `origin`, fast-forwarding to `origin/main`, and verifying the resulting local state.
 Do not start another slice until commit and push succeed.
 ```
 
@@ -133,7 +133,7 @@ If common repo tooling is missing, install or enable it first instead of treatin
 Run the relevant checks.
 Use reviewer for a focused review.
 If the slice is good, use shipper to create or switch to a fresh codex/<slice-name> branch, then commit and push only that slice there.
-Use monitor to observe PR creation, check status, auto-merge, and final merge completion into main.
+Use monitor to observe PR creation, check status, auto-merge, final merge completion into main, and then return the local checkout to a verified up-to-date `main`.
 After push succeeds, stop and summarize:
 - what was shipped
 - commit hash
@@ -161,6 +161,6 @@ Summarize concrete findings only.
 - If that branch name already exists, create a fresh suffixed variant rather than reusing an old branch.
 - After merge, that exact codex/* branch should be considered closed; any follow-up fix gets a new branch.
 - GitHub automation creates or updates PRs for `codex/*` branches and should move approved work into `main`.
-- Let `shipper` finish at successful push; let `monitor` or the parent agent watch PR/check/merge completion and then return the local checkout to `main`.
+- Let `shipper` finish at successful push; let `monitor` or the parent agent watch PR/check/merge completion and then return the local checkout to `main`, fetch `origin`, fast-forward to `origin/main`, and verify the updated local state before the slice is considered closed.
 - If the product brief changes, update `docs/product/ranki-mvp-brief.md` before relying on it.
 - For real browser smoke on this repo, prefer `pnpm smoke:pwa` and inspect artifacts in `output/playwright/pwa-smoke/`.
