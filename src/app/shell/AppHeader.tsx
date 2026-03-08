@@ -1,4 +1,10 @@
-import { BookOpenText, Cog, LibraryBig, Smartphone } from 'lucide-react'
+import {
+  BookOpenText,
+  BookText,
+  Cog,
+  LibraryBig,
+  Smartphone,
+} from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button-variants'
@@ -6,6 +12,7 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
   { to: '/', label: 'Decks', icon: LibraryBig },
+  { to: '/reading', label: 'Reading', icon: BookText },
   { to: '/settings', label: 'Settings', icon: Cog },
 ] as const
 
@@ -28,11 +35,11 @@ export function AppHeader() {
 
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Calm flashcards that stay with you offline.
+                Calm study and reading that stay with you offline.
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Decks and text-first cards already persist on this device.
-                Study sessions and limits land in the next MVP slices.
+                Decks, text-first cards, and local reading documents now persist
+                on this device without sync or cloud dependencies.
               </p>
             </div>
           </div>
