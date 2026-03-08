@@ -62,11 +62,15 @@ describe('ReadingLibraryPage', () => {
     renderReadingLibraryPage()
 
     expect(screen.getByText('Loading reading library')).toBeInTheDocument()
-    expect(screen.queryByText('No reading items yet.')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Your library is ready for the first reading note.'),
+    ).not.toBeInTheDocument()
 
     resolveDocuments?.([])
 
-    expect(await screen.findByText('No reading items yet.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Your library is ready for the first reading note.'),
+    ).toBeInTheDocument()
   })
 
   it('creates a reading document from pasted text and navigates to the reader', async () => {
@@ -85,7 +89,7 @@ describe('ReadingLibraryPage', () => {
 
     renderReadingLibraryPage()
 
-    await screen.findByText('No reading items yet.')
+    await screen.findByText('Your library is ready for the first reading note.')
 
     fireEvent.change(screen.getByLabelText('Title'), {
       target: { value: 'My article' },
@@ -93,7 +97,7 @@ describe('ReadingLibraryPage', () => {
     fireEvent.change(screen.getByLabelText('Reading text'), {
       target: { value: 'Paragraph one.\n\nParagraph two.' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Save and open' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save and open reader' }))
 
     await waitFor(() => {
       expect(createReadingDocumentMock).toHaveBeenCalledWith({
@@ -103,5 +107,31 @@ describe('ReadingLibraryPage', () => {
     })
 
     expect(await screen.findByText('Reader destination')).toBeInTheDocument()
+  })
+
+  it('shows saved documents in a scan-friendly library section before the creation area', async () => {
+    listReadingDocumentsMock.mockResolvedValue([
+      {
+        id: 'reading-1',
+        title: 'My article',
+        bodyText: 'Paragraph one.\n\nParagraph two.',
+        sourceKind: 'pasted_text',
+        wordCount: 4,
+        lastOpenedAt: 50,
+        lastReadProgress: 0.35,
+        createdAt: 10,
+        updatedAt: 60,
+      },
+    ])
+
+    renderReadingLibraryPage()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Reading Library' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Most recently opened first')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Resume reading My article' }),
+    ).toBeInTheDocument()
   })
 })
