@@ -1,5 +1,5 @@
-import { Save, ShieldCheck, SlidersHorizontal } from 'lucide-react'
-import { type FormEvent, useEffect, useState } from 'react'
+import { Save, ShieldCheck, SlidersHorizontal, Upload } from 'lucide-react'
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,6 +12,7 @@ import {
 import { bootstrapAppDb } from '@/db/bootstrap'
 import { updateAppSettings } from '@/db/settings'
 import type { AppSettings } from '@/entities/app-settings'
+import { importAnkiPackage, type ApkgImportSummary } from '@/importers/anki-apkg'
 import {
   ensureStoragePersistence,
   type StoragePersistenceStatus,
@@ -22,7 +23,7 @@ const inputClassName =
 
 export function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [storageStatus, setStorageStatus] =
     useState<StoragePersistenceStatus | null>(null)
@@ -30,6 +31,11 @@ export function SettingsPage() {
   const [globalMaxReviewsPerDay, setGlobalMaxReviewsPerDay] = useState('')
   const [isUnlimitedMaxReviews, setIsUnlimitedMaxReviews] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null)
+  const [importSummary, setImportSummary] = useState<ApkgImportSummary | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const importInputRef = useRef<HTMLInputElement | null>(null)
 
   const syncFormFromSettings = (nextSettings: AppSettings) => {
     setGlobalNewCardsPerDay(String(nextSettings.globalNewCardsPerDay))
@@ -54,7 +60,7 @@ export function SettingsPage() {
       })
       .catch((nextError: unknown) => {
         if (isMounted) {
-          setError(
+          setSettingsError(
             nextError instanceof Error
               ? nextError.message
               : 'Failed to load app settings.',
@@ -71,7 +77,7 @@ export function SettingsPage() {
     event.preventDefault()
 
     setIsSaving(true)
-    setError(null)
+    setSettingsError(null)
     setSuccessMessage(null)
 
     try {
@@ -97,13 +103,50 @@ export function SettingsPage() {
       syncFormFromSettings(updatedSettings)
       setSuccessMessage('Settings saved.')
     } catch (nextError: unknown) {
-      setError(
+      setSettingsError(
         nextError instanceof Error
           ? nextError.message
           : 'Failed to save study limits.',
       )
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleImportFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setImportSummary(null)
+    setImportError(null)
+    setSelectedImportFile(event.target.files?.[0] ?? null)
+  }
+
+  const handleImportSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!selectedImportFile) {
+      setImportError('Choose an Anki .apkg package first.')
+      return
+    }
+
+    setIsImporting(true)
+    setImportError(null)
+    setImportSummary(null)
+
+    try {
+      const summary = await importAnkiPackage(selectedImportFile)
+      setImportSummary(summary)
+      setSelectedImportFile(null)
+
+      if (importInputRef.current) {
+        importInputRef.current.value = ''
+      }
+    } catch (nextError: unknown) {
+      setImportError(
+        nextError instanceof Error
+          ? nextError.message
+          : 'Failed to import the Anki package.',
+      )
+    } finally {
+      setIsImporting(false)
     }
   }
 
@@ -121,12 +164,12 @@ export function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {error ? (
+          {settingsError ? (
             <div
               role="alert"
               className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
             >
-              {error}
+              {settingsError}
             </div>
           ) : null}
 
@@ -243,34 +286,136 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="mb-3 inline-flex rounded-2xl bg-secondary p-3 text-secondary-foreground">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <CardTitle>Why this stops here</CardTitle>
-          <CardDescription>
-            This MVP still moves in narrow slices so each pass can harden one
-            coherent workflow at a time.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
-          <p>
-            No auth, sync, analytics, import/export, or backend layers were
-            introduced. The app remains local-only and offline-first.
-          </p>
-          <p>
-            The Dexie schema already protects future sync-readiness with stable
-            IDs, timestamps, and separate stores for decks, cards, media,
-            review history, and settings.
-          </p>
-          <p>
-            The next valuable study slice after this is surfacing real due/new
-            counters on the deck overview screens from the same queue rules and
-            persisted limits.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
+              <Upload className="h-6 w-6" />
+            </div>
+            <CardTitle>Import Anki package</CardTitle>
+            <CardDescription>
+              Load a local `.apkg` deck into Ranki so we can test the product on
+              real card volume without leaving the offline-first flow.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {importError ? (
+              <div
+                role="alert"
+                className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
+              >
+                {importError}
+              </div>
+            ) : null}
+
+            {importSummary ? (
+              <div className="rounded-[1.4rem] border border-primary/30 bg-primary/8 p-5 text-sm text-primary">
+                <p className="font-medium">
+                  Imported {importSummary.cardCount} card
+                  {importSummary.cardCount === 1 ? '' : 's'} into{' '}
+                  {importSummary.deckCount} deck
+                  {importSummary.deckCount === 1 ? '' : 's'}.
+                </p>
+                <div className="mt-3 space-y-2 text-sm">
+                  {importSummary.decks.map((deck) => (
+                    <p key={deck.id}>
+                      <Link className="underline underline-offset-4" to={`/decks/${deck.id}`}>
+                        {deck.name}
+                      </Link>{' '}
+                      · {deck.cardCount} card{deck.cardCount === 1 ? '' : 's'}
+                    </p>
+                  ))}
+                </div>
+                {importSummary.importedImageCount > 0 ? (
+                  <p className="mt-3 text-sm">
+                    Preserved {importSummary.importedImageCount} back image
+                    {importSummary.importedImageCount === 1 ? '' : 's'} from
+                    the package.
+                  </p>
+                ) : null}
+                {importSummary.skippedCardCount > 0 ? (
+                  <p className="mt-3 text-sm">
+                    Skipped {importSummary.skippedCardCount} unsupported Anki
+                    card{importSummary.skippedCardCount === 1 ? '' : 's'}.
+                  </p>
+                ) : null}
+                {importSummary.skippedImageCount > 0 ? (
+                  <p className="mt-2 text-sm">
+                    Left out {importSummary.skippedImageCount} image
+                    {importSummary.skippedImageCount === 1 ? '' : 's'} that
+                    could not be mapped into Ranki&apos;s single back-image slot.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <form className="space-y-4" onSubmit={handleImportSubmit}>
+              <label className="block text-sm font-medium text-foreground">
+                Anki `.apkg` file
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".apkg"
+                  onChange={handleImportFileChange}
+                  className={inputClassName}
+                  aria-label="Anki apkg file"
+                />
+              </label>
+
+              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
+                For the current English Template import, Ranki preserves the
+                expression, cleaned meaning, sentence translation, one sentence
+                of context, and one back image when present. Audio, source
+                links, and Anki scheduling are still intentionally left out.
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={!selectedImportFile || isImporting}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {isImporting ? 'Importing package...' : 'Import package'}
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link to="/">Open decks</Link>
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="mb-3 inline-flex rounded-2xl bg-secondary p-3 text-secondary-foreground">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <CardTitle>Still local-only</CardTitle>
+            <CardDescription>
+              This keeps the MVP honest while still letting us pressure-test the
+              real product shape with bigger datasets.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
+            <p>
+              The app remains device-local and offline-first. Import happens on
+              this device only, inside the same Dexie stores that power normal
+              deck and card CRUD.
+            </p>
+            <p>
+              Stable IDs, timestamps, deck rows, card rows, media blobs, review
+              logs, and settings stay separated so future sync work is still a
+              deliberate next step instead of an accidental side effect.
+            </p>
+            <p>
+              The point of this slice is practical: load real card volume,
+              stress the deck list and study flow, and let that evidence tell us
+              what needs the next polish pass.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
