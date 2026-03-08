@@ -1,0 +1,166 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { appDb } from '@/db/app-db'
+import type { Card } from '@/entities/card'
+import type { Deck } from '@/entities/deck'
+import { StudySessionPage } from '@/pages/study/StudySessionPage'
+
+function buildDeck(overrides: Partial<Deck> = {}): Deck {
+  return {
+    id: crypto.randomUUID(),
+    name: 'English',
+    description: 'Core vocabulary',
+    useGlobalLimits: true,
+    newCardsPerDayOverride: null,
+    maxReviewsPerDayOverride: null,
+    newCardOrder: 'oldest_first',
+    createdAt: 10,
+    updatedAt: 20,
+    ...overrides,
+  }
+}
+
+function buildCard(overrides: Partial<Card> = {}): Card {
+  return {
+    id: crypto.randomUUID(),
+    deckId: 'deck-1',
+    frontText: 'Front',
+    backText: 'Back',
+    backImageAssetId: null,
+    state: 'new',
+    ladderStepIndex: null,
+    dueAt: null,
+    lastReviewedAt: null,
+    createdAt: 10,
+    updatedAt: 10,
+    ...overrides,
+  }
+}
+
+function renderStudySession(initialEntry = '/decks/deck-1/study') {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <Routes>
+        <Route path="/decks/:deckId/study" element={<StudySessionPage />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
+
+async function resetAppDb() {
+  await appDb.delete()
+  await appDb.open()
+}
+
+describe('StudySessionPage', () => {
+  beforeEach(async () => {
+    await resetAppDb()
+  })
+
+  afterEach(async () => {
+    await resetAppDb()
+  })
+
+  it('shows one current card, reveals the answer, and advances after rating', async () => {
+    const now = Date.now()
+    const deck = buildDeck({ id: 'deck-1' })
+    const dueCard = buildCard({
+      id: 'due-card',
+      deckId: deck.id,
+      frontText: 'obscure',
+      backText: 'hidden or difficult to understand',
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 1_000,
+      lastReviewedAt: now - 5_000,
+      createdAt: 20,
+      updatedAt: 20,
+    })
+    const newCard = buildCard({
+      id: 'new-card',
+      deckId: deck.id,
+      frontText: 'harbor',
+      backText: 'a sheltered place for ships',
+      createdAt: 30,
+      updatedAt: 30,
+    })
+
+    await appDb.decks.add(deck)
+    await appDb.cards.bulkAdd([newCard, dueCard])
+
+    renderStudySession()
+
+    expect(
+      await screen.findByRole('heading', { name: 'obscure' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('hidden or difficult to understand'),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
+
+    expect(
+      screen.getByText('hidden or difficult to understand'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hard' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Good' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Easy' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Good' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'harbor' })).toBeInTheDocument()
+    })
+
+    expect(
+      screen.queryByText('hidden or difficult to understand'),
+    ).not.toBeInTheDocument()
+    expect(await appDb.reviewLogs.count()).toBe(1)
+  })
+
+  it('shows the empty deck state instead of the old placeholder copy', async () => {
+    const deck = buildDeck({ id: 'deck-1' })
+
+    await appDb.decks.add(deck)
+
+    renderStudySession()
+
+    expect(
+      await screen.findByRole('heading', { name: 'No cards in this deck yet' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add first card' })).toHaveAttribute(
+      'href',
+      '/decks/deck-1/cards/new',
+    )
+    expect(
+      screen.queryByText('Deck-scoped review route reserved'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the completed state when the deck has cards but nothing is eligible right now', async () => {
+    const deck = buildDeck({ id: 'deck-1' })
+    const futureCard = buildCard({
+      id: 'future-card',
+      deckId: deck.id,
+      frontText: 'later',
+      backText: 'not due yet',
+      state: 'review',
+      ladderStepIndex: 2,
+      dueAt: Date.now() + 3_600_000,
+      lastReviewedAt: Date.now(),
+    })
+
+    await appDb.decks.add(deck)
+    await appDb.cards.add(futureCard)
+
+    renderStudySession()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Study queue complete for now' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/next retry becomes due at/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh queue' })).toBeInTheDocument()
+  })
+})

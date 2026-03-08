@@ -141,7 +141,7 @@ describe('DeckDetailsPage', () => {
     expect(screen.getByText('Review')).toBeInTheDocument()
     expect(
       screen.getAllByText(
-        'Text-first card editing is live. Image support and review actions stay outside this slice.',
+        'Text-first card editing stays here. Review actions now run from the deck-scoped study route.',
       ).length,
     ).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: 'Edit obscure' })).toHaveAttribute(

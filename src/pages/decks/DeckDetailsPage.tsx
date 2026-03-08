@@ -280,7 +280,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
               <CardTitle className="text-3xl sm:text-4xl">{deck.name}</CardTitle>
               <CardDescription className="max-w-2xl text-base">
                 {deck.description ??
-                  'No description yet. This deck workspace is ready for text-first cards and later study actions.'}
+                  'No description yet. This deck workspace is ready for text-first cards and a deck-scoped study session.'}
               </CardDescription>
             </div>
           </CardHeader>
@@ -305,7 +305,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                   {deck.useGlobalLimits ? 'Global defaults' : 'Deck override'}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Scheduler rules stay out of this slice.
+                  Queue building now runs in the study route.
                 </p>
               </div>
 
@@ -479,8 +479,8 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                   </div>
 
                   <p className="text-sm text-muted-foreground">
-                    Text-first card editing is live. Image support and review
-                    actions stay outside this slice.
+                    Text-first card editing stays here. Review actions now run
+                    from the deck-scoped study route.
                   </p>
 
                   <div className="flex flex-wrap gap-3">
