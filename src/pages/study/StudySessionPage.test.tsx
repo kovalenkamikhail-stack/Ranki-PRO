@@ -101,7 +101,7 @@ describe('StudySessionPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
 
     expect(
-      screen.getByText('hidden or difficult to understand'),
+      await screen.findByText('hidden or difficult to understand'),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hard' })).toBeInTheDocument()

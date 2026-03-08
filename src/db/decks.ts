@@ -1,4 +1,5 @@
 import { appDb, type RankiDb } from '@/db/app-db'
+import { DEFAULT_GLOBAL_NEW_CARDS_PER_DAY } from '@/entities/app-settings'
 import {
   DEFAULT_NEW_CARD_ORDER,
   type Deck,
@@ -9,6 +10,9 @@ import { nowMs } from '@/lib/time'
 export interface DeckDraft {
   name: string
   description: string | null
+  useGlobalLimits?: boolean
+  newCardsPerDayOverride?: number | null
+  maxReviewsPerDayOverride?: number | null
 }
 
 function normalizeDeckDraft(draft: DeckDraft) {
@@ -26,6 +30,60 @@ function normalizeDeckDraft(draft: DeckDraft) {
   }
 }
 
+function normalizeNonNegativeInteger(value: number, fieldName: string) {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`${fieldName} must be 0 or greater.`)
+  }
+
+  return value
+}
+
+function normalizeOptionalNonNegativeInteger(
+  value: number | null,
+  fieldName: string,
+) {
+  if (value === null) {
+    return null
+  }
+
+  return normalizeNonNegativeInteger(value, fieldName)
+}
+
+function normalizeDeckStudySettings(draft: DeckDraft, existing?: Deck) {
+  const useGlobalLimits =
+    draft.useGlobalLimits ?? existing?.useGlobalLimits ?? true
+
+  if (useGlobalLimits) {
+    return {
+      useGlobalLimits: true,
+      newCardsPerDayOverride:
+        draft.useGlobalLimits === undefined
+          ? existing?.newCardsPerDayOverride ?? null
+          : null,
+      maxReviewsPerDayOverride:
+        draft.useGlobalLimits === undefined
+          ? existing?.maxReviewsPerDayOverride ?? null
+          : null,
+    }
+  }
+
+  return {
+    useGlobalLimits: false,
+    newCardsPerDayOverride: normalizeNonNegativeInteger(
+      draft.newCardsPerDayOverride ??
+        existing?.newCardsPerDayOverride ??
+        DEFAULT_GLOBAL_NEW_CARDS_PER_DAY,
+      'Deck new cards per day',
+    ),
+    maxReviewsPerDayOverride: normalizeOptionalNonNegativeInteger(
+      draft.maxReviewsPerDayOverride ??
+        existing?.maxReviewsPerDayOverride ??
+        null,
+      'Deck max reviews per day',
+    ),
+  }
+}
+
 export async function listDecks(database: RankiDb = appDb) {
   return database.decks.orderBy('updatedAt').reverse().toArray()
 }
@@ -40,13 +98,12 @@ export async function createDeck(
 ) {
   const timestamp = nowMs()
   const normalized = normalizeDeckDraft(draft)
+  const normalizedStudySettings = normalizeDeckStudySettings(draft)
   const deck: Deck = {
     id: createId(),
     name: normalized.name,
     description: normalized.description,
-    useGlobalLimits: true,
-    newCardsPerDayOverride: null,
-    maxReviewsPerDayOverride: null,
+    ...normalizedStudySettings,
     newCardOrder: DEFAULT_NEW_CARD_ORDER,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -63,16 +120,19 @@ export async function updateDeck(
 ) {
   return database.transaction('rw', database.decks, async () => {
     const existing = await database.decks.get(deckId)
-    const normalized = normalizeDeckDraft(draft)
 
     if (!existing) {
       throw new Error('Deck not found.')
     }
 
+    const normalized = normalizeDeckDraft(draft)
+    const normalizedStudySettings = normalizeDeckStudySettings(draft, existing)
+
     const updated: Deck = {
       ...existing,
       name: normalized.name,
       description: normalized.description,
+      ...normalizedStudySettings,
       updatedAt: nowMs(),
     }
 

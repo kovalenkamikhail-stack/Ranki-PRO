@@ -69,6 +69,9 @@ describe('EditDeckPage', () => {
       expect(createDeckMock).toHaveBeenCalledWith({
         name: 'Spanish',
         description: 'Travel phrases',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
       })
     })
 
@@ -80,17 +83,24 @@ describe('EditDeckPage', () => {
       id: 'deck-42',
       name: 'French',
       description: 'Common verbs',
+      useGlobalLimits: true,
+      newCardsPerDayOverride: null,
+      maxReviewsPerDayOverride: null,
     })
     updateDeckMock.mockResolvedValue({
       id: 'deck-42',
       name: 'French B1',
       description: 'Common verbs and phrases',
+      useGlobalLimits: true,
+      newCardsPerDayOverride: null,
+      maxReviewsPerDayOverride: null,
     })
 
     renderWithRouter('/decks/deck-42/edit', <EditDeckPage mode="edit" />)
 
     expect(await screen.findByDisplayValue('French')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Common verbs')).toBeInTheDocument()
+    expect(screen.getByLabelText('Use global study limits')).toBeChecked()
 
     fireEvent.change(screen.getByLabelText('Deck name'), {
       target: { value: ' French B1 ' },
@@ -104,9 +114,56 @@ describe('EditDeckPage', () => {
       expect(updateDeckMock).toHaveBeenCalledWith('deck-42', {
         name: 'French B1',
         description: 'Common verbs and phrases',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
       })
     })
 
     expect(await screen.findByText('Decks home')).toBeInTheDocument()
+  })
+
+  it('loads and saves deck-specific study overrides when global limits are disabled', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-42',
+      name: 'French',
+      description: 'Common verbs',
+      useGlobalLimits: false,
+      newCardsPerDayOverride: 5,
+      maxReviewsPerDayOverride: 30,
+    })
+    updateDeckMock.mockResolvedValue({
+      id: 'deck-42',
+      name: 'French',
+      description: 'Common verbs',
+      useGlobalLimits: false,
+      newCardsPerDayOverride: 8,
+      maxReviewsPerDayOverride: 40,
+    })
+
+    renderWithRouter('/decks/deck-42/edit', <EditDeckPage mode="edit" />)
+
+    expect(await screen.findByDisplayValue('French')).toBeInTheDocument()
+    expect(screen.getByLabelText('Use global study limits')).not.toBeChecked()
+    expect(screen.getByLabelText('Deck new cards per day')).toHaveValue(5)
+    expect(screen.getByLabelText('Deck max reviews per day')).toHaveValue(30)
+
+    fireEvent.change(screen.getByLabelText('Deck new cards per day'), {
+      target: { value: '8' },
+    })
+    fireEvent.change(screen.getByLabelText('Deck max reviews per day'), {
+      target: { value: '40' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(updateDeckMock).toHaveBeenCalledWith('deck-42', {
+        name: 'French',
+        description: 'Common verbs',
+        useGlobalLimits: false,
+        newCardsPerDayOverride: 8,
+        maxReviewsPerDayOverride: 40,
+      })
+    })
   })
 })
