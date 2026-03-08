@@ -10,6 +10,7 @@ const {
   getCardMock,
   getCardBackImageMock,
   getDeckMock,
+  prepareBackImageDraftMock,
   updateCardMock,
 } = vi.hoisted(() => ({
   createCardMock: vi.fn(),
@@ -17,6 +18,7 @@ const {
   getCardMock: vi.fn(),
   getCardBackImageMock: vi.fn(),
   getDeckMock: vi.fn(),
+  prepareBackImageDraftMock: vi.fn(),
   updateCardMock: vi.fn(),
 }))
 
@@ -32,15 +34,9 @@ vi.mock('@/db/decks', () => ({
 }))
 
 vi.mock('@/db/media-assets', () => ({
-  createBackImageDraft: (file: File) => ({
-    blob: file,
-    mimeType: file.type,
-    fileName: file.name,
-    sizeBytes: file.size,
-    width: null,
-    height: null,
-  }),
+  BACK_IMAGE_INPUT_ACCEPT: 'image/jpeg,image/png,image/webp',
   getCardBackImage: getCardBackImageMock,
+  prepareBackImageDraft: prepareBackImageDraftMock,
 }))
 
 function renderWithRouter(initialEntry: string, element: ReactNode) {
@@ -66,8 +62,17 @@ describe('EditCardPage', () => {
     getCardMock.mockReset()
     getCardBackImageMock.mockReset()
     getDeckMock.mockReset()
+    prepareBackImageDraftMock.mockReset()
     updateCardMock.mockReset()
     getCardBackImageMock.mockResolvedValue(null)
+    prepareBackImageDraftMock.mockImplementation(async (file: File) => ({
+      blob: file,
+      mimeType: file.type,
+      fileName: file.name,
+      sizeBytes: file.size,
+      width: 1200,
+      height: 900,
+    }))
   })
 
   it('validates required text before creating a card', async () => {
@@ -143,6 +148,15 @@ describe('EditCardPage', () => {
     expect(await screen.findByText('Spanish')).toBeInTheDocument()
 
     const file = new File(['image-binary'], 'hola.png', { type: 'image/png' })
+    const optimizedBlob = new Blob(['optimized-image'], { type: 'image/webp' })
+    prepareBackImageDraftMock.mockResolvedValue({
+      blob: optimizedBlob,
+      mimeType: 'image/webp',
+      fileName: 'hola.webp',
+      sizeBytes: optimizedBlob.size,
+      width: 1200,
+      height: 900,
+    })
 
     fireEvent.change(screen.getByLabelText('Front text'), {
       target: { value: 'hola' },
@@ -153,6 +167,14 @@ describe('EditCardPage', () => {
     fireEvent.change(screen.getByLabelText('Choose image'), {
       target: { files: [file] },
     })
+    expect(
+      await screen.findByText(
+        'This optimized image will be saved when you submit the card.',
+      ),
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Create card' })).toBeEnabled()
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Create card' }))
 
     await waitFor(() => {
@@ -162,14 +184,106 @@ describe('EditCardPage', () => {
           frontText: 'hola',
           backText: 'hello',
           backImage: expect.objectContaining({
-            blob: expect.any(File),
-            mimeType: 'image/png',
-            fileName: 'hola.png',
-            sizeBytes: file.size,
+            blob: optimizedBlob,
+            mimeType: 'image/webp',
+            fileName: 'hola.webp',
+            sizeBytes: optimizedBlob.size,
+            width: 1200,
+            height: 900,
           }),
         }),
       )
     })
+  })
+
+  it('blocks submit until the selected back image finishes local preparation', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-1',
+      name: 'Spanish',
+      description: 'Travel phrases',
+    })
+
+    let resolvePreparedBackImage:
+      | ((value: {
+          blob: Blob
+          mimeType: string
+          fileName: string
+          sizeBytes: number
+          width: number
+          height: number
+        }) => void)
+      | undefined
+
+    prepareBackImageDraftMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePreparedBackImage = resolve
+      }),
+    )
+
+    renderWithRouter('/decks/deck-1/cards/new', <EditCardPage mode="create" />)
+
+    expect(await screen.findByText('Spanish')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Front text'), {
+      target: { value: 'hola' },
+    })
+    fireEvent.change(screen.getByLabelText('Back text'), {
+      target: { value: 'hello' },
+    })
+    fireEvent.change(screen.getByLabelText('Choose image'), {
+      target: {
+        files: [new File(['image-binary'], 'hola.png', { type: 'image/png' })],
+      },
+    })
+    expect(
+      await screen.findByText('Preparing the selected image locally before save.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create card' })).toBeDisabled()
+    expect(createCardMock).not.toHaveBeenCalled()
+
+    resolvePreparedBackImage?.({
+      blob: new Blob(['optimized-image'], { type: 'image/webp' }),
+      mimeType: 'image/webp',
+      fileName: 'hola.webp',
+      sizeBytes: 15,
+      width: 1200,
+      height: 900,
+    })
+
+    expect(
+      await screen.findByText(
+        'This optimized image will be saved when you submit the card.',
+      ),
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Create card' })).toBeEnabled()
+    })
+  })
+
+  it('shows a preparation error when the selected image is invalid or too large', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-1',
+      name: 'Spanish',
+      description: 'Travel phrases',
+    })
+    prepareBackImageDraftMock.mockRejectedValue(
+      new Error('Back image must be 12 MB or smaller.'),
+    )
+
+    renderWithRouter('/decks/deck-1/cards/new', <EditCardPage mode="create" />)
+
+    expect(await screen.findByText('Spanish')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Choose image'), {
+      target: {
+        files: [new File(['image-binary'], 'too-large.png', { type: 'image/png' })],
+      },
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Back image must be 12 MB or smaller.',
+    )
+    expect(createCardMock).not.toHaveBeenCalled()
   })
 
   it('loads an existing card and saves edits back to Dexie', async () => {
