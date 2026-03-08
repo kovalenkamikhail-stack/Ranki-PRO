@@ -87,6 +87,8 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - Treat `origin` as an internet-facing repository. Only commit code, docs, and assets that are intentionally safe to publish.
 - Never commit or push secrets, API keys, tokens, SSH keys, cookies, credentials, local `.env` data, browser exports, or machine-specific auth material.
 - Never commit local databases, caches, captured user content, personal screenshots, or logs that may contain private data, prompts, or identifiers.
+- Keep orchestration or verification chat handoff notes outside the repository at `C:\Users\micha\.codex\handoffs\Ranki-PRO\chat-handoff.md`.
+- If that local handoff needs to be updated, edit it there in place instead of recreating `docs/codex/chat-handoff.md` or any other private memory file under the repo.
 - Never copy raw files from `Downloads`, `Desktop`, or local app storage into the repository unless they were explicitly sanitized for publication.
 - Before every commit and push, inspect the staged diff for sensitive strings, personal data, internal-only notes, or accidental file additions.
 - If there is any doubt about whether material is safe for a public remote, stop and report the risk instead of pushing.
