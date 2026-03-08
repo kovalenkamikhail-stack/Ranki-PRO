@@ -128,7 +128,7 @@ describe('StudySessionPage', () => {
     renderStudySession()
 
     expect(
-      await screen.findByRole('heading', { name: 'No cards to study yet' }),
+      await screen.findByRole('heading', { name: 'No cards in this deck yet' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add first card' })).toHaveAttribute(
       'href',
@@ -158,7 +158,7 @@ describe('StudySessionPage', () => {
     renderStudySession()
 
     expect(
-      await screen.findByRole('heading', { name: 'Session complete for now' }),
+      await screen.findByRole('heading', { name: 'Study queue complete for now' }),
     ).toBeInTheDocument()
     expect(screen.getByText(/next retry becomes due at/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Refresh queue' })).toBeInTheDocument()
