@@ -20,6 +20,9 @@ import { bootstrapAppDb } from '@/db/bootstrap'
 import { deleteDeckCascade, listDecks } from '@/db/decks'
 import { loadDeckStudySession } from '@/db/study-session'
 import type { Deck } from '@/entities/deck'
+import { getDeckStudySummary, type DeckStudySummary } from '@/pages/decks/study-summary'
+
+const EMPTY_STUDY_SUMMARY = getDeckStudySummary(null)
 
 function formatUpdatedAt(timestamp: number) {
   return new Intl.DateTimeFormat(undefined, {
@@ -30,8 +33,8 @@ function formatUpdatedAt(timestamp: number) {
 
 export function HomePage() {
   const [decks, setDecks] = useState<Deck[]>([])
-  const [studyCountsByDeckId, setStudyCountsByDeckId] = useState<
-    Record<string, { dueCount: number; newCount: number }>
+  const [studySummaryByDeckId, setStudySummaryByDeckId] = useState<
+    Record<string, DeckStudySummary>
   >({})
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -43,23 +46,17 @@ export function HomePage() {
     void bootstrapAppDb()
       .then(() => listDecks())
       .then(async (nextDecks) => {
-        const studyCountsEntries = await Promise.all(
+        const studySummaryEntries = await Promise.all(
           nextDecks.map(async (deck) => {
             const session = await loadDeckStudySession(deck.id)
 
-            return [
-              deck.id,
-              {
-                dueCount: session?.queue.dueCards.length ?? 0,
-                newCount: session?.queue.newCards.length ?? 0,
-              },
-            ] as const
+            return [deck.id, getDeckStudySummary(session)] as const
           }),
         )
 
         if (isMounted) {
           setDecks(nextDecks)
-          setStudyCountsByDeckId(Object.fromEntries(studyCountsEntries))
+          setStudySummaryByDeckId(Object.fromEntries(studySummaryEntries))
           setIsLoading(false)
         }
       })
@@ -94,7 +91,7 @@ export function HomePage() {
       setDecks((currentDecks) =>
         currentDecks.filter((currentDeck) => currentDeck.id !== deck.id),
       )
-      setStudyCountsByDeckId((currentCounts) => {
+      setStudySummaryByDeckId((currentCounts) => {
         const nextCounts = { ...currentCounts }
         delete nextCounts[deck.id]
         return nextCounts
@@ -282,69 +279,79 @@ export function HomePage() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            {decks.map((deck) => (
-              <Card key={deck.id}>
-                <CardHeader className="gap-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-2">
-                      <CardTitle>{deck.name}</CardTitle>
-                      <CardDescription>
-                        {deck.description ??
-                          'No description yet. Use this deck shell for an upcoming card slice.'}
-                      </CardDescription>
+            {decks.map((deck) => {
+              const studySummary =
+                studySummaryByDeckId[deck.id] ?? EMPTY_STUDY_SUMMARY
+
+              return (
+                <Card key={deck.id}>
+                  <CardHeader className="gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <CardTitle>{deck.name}</CardTitle>
+                        <CardDescription>
+                          {deck.description ??
+                            'No description yet. Use this deck shell for an upcoming card slice.'}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="outline">
+                        Updated {formatUpdatedAt(deck.updatedAt)}
+                      </Badge>
                     </div>
-                    <Badge variant="outline">Updated {formatUpdatedAt(deck.updatedAt)}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-                    Stored locally with deck settings defaults ready. Open the
-                    deck to inspect its workspace shell, local card list, and
-                    deck-scoped study counts.
-                  </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
+                      Stored locally with deck settings defaults ready. Open the
+                      deck to inspect its workspace shell, local card list, and
+                      deck-scoped study counts.
+                    </div>
 
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant="outline">
-                      Due {studyCountsByDeckId[deck.id]?.dueCount ?? 0}
-                    </Badge>
-                    <Badge variant="outline">
-                      New {studyCountsByDeckId[deck.id]?.newCount ?? 0}
-                    </Badge>
-                  </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                      <Badge variant="outline">Due {studySummary.dueCount}</Badge>
+                      <Badge variant="outline">New {studySummary.newCount}</Badge>
+                      <Badge variant={studySummary.statusVariant}>
+                        {studySummary.statusLabel}
+                      </Badge>
+                    </div>
 
-                  <div className="flex flex-wrap gap-3">
-                    <Button asChild>
-                      <Link to={`/decks/${deck.id}`} aria-label={`Open ${deck.name}`}>
-                        Open
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      {studySummary.statusDetail}
+                    </p>
 
-                    <Button asChild variant="outline">
-                      <Link
-                        to={`/decks/${deck.id}/edit`}
-                        aria-label={`Edit ${deck.name}`}
+                    <div className="flex flex-wrap gap-3">
+                      <Button asChild>
+                        <Link to={`/decks/${deck.id}`} aria-label={`Open ${deck.name}`}>
+                          Open
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+
+                      <Button asChild variant="outline">
+                        <Link
+                          to={`/decks/${deck.id}/edit`}
+                          aria-label={`Edit ${deck.name}`}
+                        >
+                          <PencilLine className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => void handleDeleteDeck(deck)}
+                        disabled={deletingDeckId === deck.id}
+                        aria-label={`Delete ${deck.name}`}
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
-                        <PencilLine className="mr-2 h-4 w-4" />
-                        Edit
-                      </Link>
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => void handleDeleteDeck(deck)}
-                      disabled={deletingDeckId === deck.id}
-                      aria-label={`Delete ${deck.name}`}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {deletingDeckId === deck.id ? 'Deleting...' : 'Delete'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {deletingDeckId === deck.id ? 'Deleting...' : 'Delete'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </section>
       ) : null}

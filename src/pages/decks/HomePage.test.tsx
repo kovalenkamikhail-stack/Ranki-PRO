@@ -44,6 +44,8 @@ describe('HomePage', () => {
     loadDeckStudySessionMock.mockReset()
     bootstrapAppDbMock.mockResolvedValue(undefined)
     loadDeckStudySessionMock.mockResolvedValue({
+      state: 'completed',
+      nextDueAt: null,
       queue: {
         dueCards: [],
         newCards: [],
@@ -93,6 +95,7 @@ describe('HomePage', () => {
     expect(await screen.findByText('Spanish')).toBeInTheDocument()
     expect(screen.getByText('Due 0')).toBeInTheDocument()
     expect(screen.getByText('New 0')).toBeInTheDocument()
+    expect(screen.getByText('Nothing due right now')).toBeInTheDocument()
     expect(screen.queryByText('No decks yet on this device.')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Spanish' }))
@@ -132,6 +135,8 @@ describe('HomePage', () => {
       },
     ])
     loadDeckStudySessionMock.mockResolvedValue({
+      state: 'ready',
+      nextDueAt: null,
       queue: {
         dueCards: [{ id: 'due-1' }],
         newCards: [{ id: 'new-1' }, { id: 'new-2' }],
@@ -144,5 +149,73 @@ describe('HomePage', () => {
     expect(await screen.findByText('Spanish')).toBeInTheDocument()
     expect(screen.getByText('Due 1')).toBeInTheDocument()
     expect(screen.getByText('New 2')).toBeInTheDocument()
+    expect(screen.getByText('Ready now')).toBeInTheDocument()
+    expect(screen.getByText('3 cards are available to study.')).toBeInTheDocument()
+  })
+
+  it('shows a non-ready zero-count summary when a deck has no cards yet', async () => {
+    listDecksMock.mockResolvedValue([
+      {
+        id: 'deck-1',
+        name: 'Spanish',
+        description: 'Travel phrases',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 10,
+        updatedAt: 10,
+      },
+    ])
+    loadDeckStudySessionMock.mockResolvedValue({
+      state: 'empty',
+      nextDueAt: null,
+      queue: {
+        dueCards: [],
+        newCards: [],
+        cards: [],
+      },
+    })
+
+    renderHomePage()
+
+    expect(await screen.findByText('Spanish')).toBeInTheDocument()
+    expect(screen.getByText('Due 0')).toBeInTheDocument()
+    expect(screen.getByText('New 0')).toBeInTheDocument()
+    expect(screen.getAllByText('No cards yet').length).toBeGreaterThan(0)
+    expect(
+      screen.getByText('Add the first card to make this deck study-ready.'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows the next due summary when a deck is waiting for a retry', async () => {
+    listDecksMock.mockResolvedValue([
+      {
+        id: 'deck-1',
+        name: 'Spanish',
+        description: 'Travel phrases',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 10,
+        updatedAt: 10,
+      },
+    ])
+    loadDeckStudySessionMock.mockResolvedValue({
+      state: 'completed',
+      nextDueAt: Date.UTC(2026, 2, 8, 10, 30, 0),
+      queue: {
+        dueCards: [],
+        newCards: [],
+        cards: [],
+      },
+    })
+
+    renderHomePage()
+
+    expect(await screen.findByText('Spanish')).toBeInTheDocument()
+    expect(screen.getByText('Waiting for next due card')).toBeInTheDocument()
+    expect(screen.getByText(/^Next due /)).toBeInTheDocument()
   })
 })

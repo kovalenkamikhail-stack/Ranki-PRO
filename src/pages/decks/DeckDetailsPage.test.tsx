@@ -192,6 +192,96 @@ describe('DeckDetailsPage', () => {
 
     expect(within(dueTileLabel.closest('div')!).getByText('1')).toBeInTheDocument()
     expect(within(newTileLabel.closest('div')!).getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('Ready now')).toBeInTheDocument()
+    expect(screen.getByText('2 cards are available to study.')).toBeInTheDocument()
+  })
+
+  it('respects deck-level limits when showing deck study counters', async () => {
+    const now = Date.now()
+    const deck = buildDeck({
+      id: 'deck-1',
+      useGlobalLimits: false,
+      newCardsPerDayOverride: 1,
+      maxReviewsPerDayOverride: 1,
+    })
+    const firstDueCard = buildCard({
+      id: 'due-card-1',
+      deckId: deck.id,
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 10_000,
+      lastReviewedAt: now - 20_000,
+      frontText: 'first due card',
+      createdAt: 10,
+      updatedAt: 10,
+    })
+    const secondDueCard = buildCard({
+      id: 'due-card-2',
+      deckId: deck.id,
+      state: 'review',
+      ladderStepIndex: 2,
+      dueAt: now - 5_000,
+      lastReviewedAt: now - 15_000,
+      frontText: 'second due card',
+      createdAt: 20,
+      updatedAt: 20,
+    })
+    const firstNewCard = buildCard({
+      id: 'new-card-1',
+      deckId: deck.id,
+      frontText: 'first new card',
+      createdAt: 30,
+      updatedAt: 30,
+    })
+    const secondNewCard = buildCard({
+      id: 'new-card-2',
+      deckId: deck.id,
+      frontText: 'second new card',
+      createdAt: 40,
+      updatedAt: 40,
+    })
+
+    await appDb.decks.add(deck)
+    await appDb.cards.bulkAdd([
+      secondNewCard,
+      secondDueCard,
+      firstNewCard,
+      firstDueCard,
+    ])
+
+    renderDeckDetails()
+
+    const dueTileLabel = await screen.findByText('Due today')
+    const newTileLabel = screen.getByText('New today')
+
+    expect(within(dueTileLabel.closest('div')!).getByText('1')).toBeInTheDocument()
+    expect(within(newTileLabel.closest('div')!).getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('Ready now')).toBeInTheDocument()
+    expect(screen.getByText('2 cards are available to study.')).toBeInTheDocument()
+  })
+
+  it('shows a waiting status when the deck has cards but nothing is eligible yet', async () => {
+    const now = Date.now()
+    const deck = buildDeck({ id: 'deck-1' })
+    const futureCard = buildCard({
+      id: 'future-card',
+      deckId: deck.id,
+      frontText: 'future card',
+      state: 'review',
+      ladderStepIndex: 2,
+      dueAt: now + 60_000,
+      lastReviewedAt: now - 5_000,
+      createdAt: 10,
+      updatedAt: 10,
+    })
+
+    await appDb.decks.add(deck)
+    await appDb.cards.add(futureCard)
+
+    renderDeckDetails()
+
+    expect(await screen.findByText('Waiting for next due card')).toBeInTheDocument()
+    expect(screen.getByText(/^Next due /)).toBeInTheDocument()
   })
 
   it('deletes a stored card and updates the empty state when the last one is removed', async () => {
