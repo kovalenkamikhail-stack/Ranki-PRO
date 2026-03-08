@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { type ReactNode, useEffect, useEffectEvent, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { CardBackImage } from '@/components/cards/CardBackImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { getCardBackImage, type CardBackImage as StoredCardBackImage } from '@/db/media-assets'
 import {
   loadDeckStudySession,
   reviewDeckStudyCard,
@@ -127,6 +129,8 @@ function SessionStateCard({
 
 function StudySessionWorkspace({ deckId }: { deckId: string }) {
   const [session, setSession] = useState<DeckStudySessionSnapshot | null>(null)
+  const [currentBackImage, setCurrentBackImage] =
+    useState<StoredCardBackImage | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -135,6 +139,7 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
   const [submittingRating, setSubmittingRating] = useState<ReviewRating | null>(
     null,
   )
+  const previewCard = session?.currentCard ?? null
 
   const commitLoadedSession = useEffectEvent(
     (nextSession: DeckStudySessionSnapshot | null) => {
@@ -188,6 +193,38 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
     setIsAnswerRevealed(false)
     setActionError(null)
   }, [session?.currentCard?.id])
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (!previewCard?.backImageAssetId) {
+      setCurrentBackImage(null)
+      return () => {
+        isMounted = false
+      }
+    }
+
+    void getCardBackImage(previewCard)
+      .then((nextBackImage) => {
+        if (isMounted) {
+          setCurrentBackImage(nextBackImage)
+        }
+      })
+      .catch((nextError: unknown) => {
+        if (isMounted) {
+          setCurrentBackImage(null)
+          setActionError(
+            nextError instanceof Error
+              ? nextError.message
+              : 'Failed to load the attached back image.',
+          )
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [previewCard])
 
   useEffect(() => {
     if (!session || session.currentCard || session.nextDueAt === null) {
@@ -475,6 +512,13 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
                 <p className="mt-4 text-base leading-7 text-foreground">
                   {currentCard.backText}
                 </p>
+                {currentBackImage ? (
+                  <CardBackImage
+                    blob={currentBackImage.blob}
+                    alt={`Back image for ${currentCard.frontText}`}
+                    className="mt-4 max-h-80 w-full rounded-[1.2rem] border border-border/70 object-cover"
+                  />
+                ) : null}
               </div>
             ) : (
               <Button

@@ -147,10 +147,13 @@ export async function deleteDeckCascade(
 ) {
   return database.transaction(
     'rw',
-    database.decks,
-    database.cards,
-    database.mediaAssets,
-    database.reviewLogs,
+    [
+      database.decks,
+      database.cards,
+      database.mediaAssets,
+      database.mediaBlobs,
+      database.reviewLogs,
+    ],
     async () => {
       const cardIds = (await database.cards
         .where('deckId')
@@ -158,7 +161,19 @@ export async function deleteDeckCascade(
         .primaryKeys()) as string[]
 
       if (cardIds.length > 0) {
-        await database.mediaAssets.where('cardId').anyOf(cardIds).delete()
+        const mediaAssets = await database.mediaAssets
+          .where('cardId')
+          .anyOf(cardIds)
+          .toArray()
+
+        if (mediaAssets.length > 0) {
+          await database.mediaBlobs
+            .where('blobRef')
+            .anyOf(mediaAssets.map((asset) => asset.blobRef))
+            .delete()
+          await database.mediaAssets.where('cardId').anyOf(cardIds).delete()
+        }
+
         await database.reviewLogs.where('cardId').anyOf(cardIds).delete()
       }
 

@@ -8,12 +8,14 @@ const {
   createCardMock,
   deleteCardCascadeMock,
   getCardMock,
+  getCardBackImageMock,
   getDeckMock,
   updateCardMock,
 } = vi.hoisted(() => ({
   createCardMock: vi.fn(),
   deleteCardCascadeMock: vi.fn(),
   getCardMock: vi.fn(),
+  getCardBackImageMock: vi.fn(),
   getDeckMock: vi.fn(),
   updateCardMock: vi.fn(),
 }))
@@ -27,6 +29,18 @@ vi.mock('@/db/cards', () => ({
 
 vi.mock('@/db/decks', () => ({
   getDeck: getDeckMock,
+}))
+
+vi.mock('@/db/media-assets', () => ({
+  createBackImageDraft: (file: File) => ({
+    blob: file,
+    mimeType: file.type,
+    fileName: file.name,
+    sizeBytes: file.size,
+    width: null,
+    height: null,
+  }),
+  getCardBackImage: getCardBackImageMock,
 }))
 
 function renderWithRouter(initialEntry: string, element: ReactNode) {
@@ -50,8 +64,10 @@ describe('EditCardPage', () => {
     createCardMock.mockReset()
     deleteCardCascadeMock.mockReset()
     getCardMock.mockReset()
+    getCardBackImageMock.mockReset()
     getDeckMock.mockReset()
     updateCardMock.mockReset()
+    getCardBackImageMock.mockResolvedValue(null)
   })
 
   it('validates required text before creating a card', async () => {
@@ -102,10 +118,58 @@ describe('EditCardPage', () => {
       expect(createCardMock).toHaveBeenCalledWith('deck-1', {
         frontText: 'hola',
         backText: 'hello',
+        backImage: null,
       })
     })
 
     expect(await screen.findByText('Deck workspace route')).toBeInTheDocument()
+  })
+
+  it('creates a card with one selected back image', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-1',
+      name: 'Spanish',
+      description: 'Travel phrases',
+    })
+    createCardMock.mockResolvedValue({
+      id: 'card-1',
+      deckId: 'deck-1',
+      frontText: 'hola',
+      backText: 'hello',
+    })
+
+    renderWithRouter('/decks/deck-1/cards/new', <EditCardPage mode="create" />)
+
+    expect(await screen.findByText('Spanish')).toBeInTheDocument()
+
+    const file = new File(['image-binary'], 'hola.png', { type: 'image/png' })
+
+    fireEvent.change(screen.getByLabelText('Front text'), {
+      target: { value: 'hola' },
+    })
+    fireEvent.change(screen.getByLabelText('Back text'), {
+      target: { value: 'hello' },
+    })
+    fireEvent.change(screen.getByLabelText('Choose image'), {
+      target: { files: [file] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Create card' }))
+
+    await waitFor(() => {
+      expect(createCardMock).toHaveBeenCalledWith(
+        'deck-1',
+        expect.objectContaining({
+          frontText: 'hola',
+          backText: 'hello',
+          backImage: expect.objectContaining({
+            blob: expect.any(File),
+            mimeType: 'image/png',
+            fileName: 'hola.png',
+            sizeBytes: file.size,
+          }),
+        }),
+      )
+    })
   })
 
   it('loads an existing card and saves edits back to Dexie', async () => {
@@ -119,12 +183,14 @@ describe('EditCardPage', () => {
       deckId: 'deck-42',
       frontText: 'chien',
       backText: 'dog',
+      backImageAssetId: null,
     })
     updateCardMock.mockResolvedValue({
       id: 'card-9',
       deckId: 'deck-42',
       frontText: 'chat',
       backText: 'cat',
+      backImageAssetId: null,
     })
 
     renderWithRouter(
@@ -147,10 +213,66 @@ describe('EditCardPage', () => {
       expect(updateCardMock).toHaveBeenCalledWith('card-9', {
         frontText: 'chat',
         backText: 'cat',
+        backImage: undefined,
       })
     })
 
     expect(await screen.findByText('Deck workspace route')).toBeInTheDocument()
+  })
+
+  it('loads an existing back image preview and allows removing it on save', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-42',
+      name: 'French',
+      description: 'Common verbs',
+    })
+    getCardMock.mockResolvedValue({
+      id: 'card-9',
+      deckId: 'deck-42',
+      frontText: 'chien',
+      backText: 'dog',
+      backImageAssetId: 'asset-1',
+    })
+    getCardBackImageMock.mockResolvedValue({
+      asset: {
+        id: 'asset-1',
+        cardId: 'card-9',
+        kind: 'image',
+        mimeType: 'image/png',
+        fileName: 'chien.png',
+        sizeBytes: 128,
+        blobRef: 'media-blob:asset-1',
+        width: null,
+        height: null,
+        createdAt: 10,
+      },
+      blob: new Blob(['existing-image'], { type: 'image/png' }),
+    })
+    updateCardMock.mockResolvedValue({
+      id: 'card-9',
+      deckId: 'deck-42',
+      frontText: 'chien',
+      backText: 'dog',
+      backImageAssetId: null,
+    })
+
+    renderWithRouter(
+      '/decks/deck-42/cards/card-9/edit',
+      <EditCardPage mode="edit" />,
+    )
+
+    expect(await screen.findByAltText('Back image for chien')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove image' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(updateCardMock).toHaveBeenCalledWith('card-9', {
+        frontText: 'chien',
+        backText: 'dog',
+        backImage: null,
+      })
+    })
   })
 
   it('shows a missing state when the selected card is no longer in the deck', async () => {
@@ -184,6 +306,7 @@ describe('EditCardPage', () => {
       deckId: 'deck-42',
       frontText: 'chien',
       backText: 'dog',
+      backImageAssetId: null,
     })
     deleteCardCascadeMock.mockResolvedValue(undefined)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
