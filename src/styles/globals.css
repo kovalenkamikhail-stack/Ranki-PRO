@@ -103,3 +103,55 @@
     background: color-mix(in oklab, var(--primary) 24%, transparent);
   }
 }
+
+@layer utilities {
+  @keyframes study-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes study-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes study-state-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .study-card-enter {
+      animation: study-card-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .study-reveal {
+      animation: study-reveal 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .study-state-enter {
+      animation: study-state-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+  }
+}

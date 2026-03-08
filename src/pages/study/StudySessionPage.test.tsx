@@ -170,9 +170,110 @@ describe('StudySessionPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
 
-    expect(
-      await screen.findByAltText(`Back image for ${dueCard.frontText}`),
-    ).toBeInTheDocument()
+    await waitFor(
+      () => {
+        expect(
+          screen.getByAltText(`Back image for ${dueCard.frontText}`),
+        ).toBeInTheDocument()
+      },
+      { timeout: 3_000 },
+    )
+  })
+
+  it('clears the previous back image when advancing between image-backed cards', async () => {
+    const now = Date.now()
+    const deck = buildDeck({ id: 'deck-1' })
+    const firstCard = buildCard({
+      id: 'first-card',
+      deckId: deck.id,
+      frontText: 'alpha',
+      backText: 'first answer',
+      backImageAssetId: 'asset-1',
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 2_000,
+      lastReviewedAt: now - 8_000,
+      createdAt: 20,
+      updatedAt: 20,
+    })
+    const secondCard = buildCard({
+      id: 'second-card',
+      deckId: deck.id,
+      frontText: 'beta',
+      backText: 'second answer',
+      backImageAssetId: 'asset-2',
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 1_000,
+      lastReviewedAt: now - 4_000,
+      createdAt: 30,
+      updatedAt: 30,
+    })
+    const firstAsset: MediaAsset = {
+      id: 'asset-1',
+      cardId: firstCard.id,
+      kind: 'image',
+      mimeType: 'image/png',
+      fileName: 'alpha.png',
+      sizeBytes: 128,
+      blobRef: 'media-blob:asset-1',
+      width: null,
+      height: null,
+      createdAt: 20,
+    }
+    const firstBlob: MediaBlob = {
+      blobRef: firstAsset.blobRef,
+      blob: new Blob(['alpha-image'], { type: 'image/png' }),
+      createdAt: 20,
+    }
+    const secondAsset: MediaAsset = {
+      id: 'asset-2',
+      cardId: secondCard.id,
+      kind: 'image',
+      mimeType: 'image/png',
+      fileName: 'beta.png',
+      sizeBytes: 128,
+      blobRef: 'media-blob:asset-2',
+      width: null,
+      height: null,
+      createdAt: 30,
+    }
+    const secondBlob: MediaBlob = {
+      blobRef: secondAsset.blobRef,
+      blob: new Blob(['beta-image'], { type: 'image/png' }),
+      createdAt: 30,
+    }
+
+    await appDb.decks.add(deck)
+    await appDb.cards.bulkAdd([firstCard, secondCard])
+    await appDb.mediaAssets.bulkAdd([firstAsset, secondAsset])
+    await appDb.mediaBlobs.bulkAdd([firstBlob, secondBlob])
+
+    renderStudySession()
+
+    expect(await screen.findByRole('heading', { name: 'alpha' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
+
+    expect(await screen.findByAltText('Back image for alpha')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Good' }))
+
+    expect(await screen.findByRole('heading', { name: 'beta' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Show answer' })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByAltText('Back image for alpha')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
+
+    await waitFor(
+      () => {
+        expect(screen.getByAltText('Back image for beta')).toBeInTheDocument()
+      },
+      { timeout: 3_000 },
+    )
   })
 
   it('shows the empty deck state instead of the old placeholder copy', async () => {
@@ -215,7 +316,8 @@ describe('StudySessionPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Study queue complete for now' }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/next retry becomes due at/i)).toBeInTheDocument()
+    expect(screen.getByText(/next retry unlocks at/i)).toBeInTheDocument()
+    expect(screen.getByText(/keep this page open and the next card will appear automatically at/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Refresh queue' })).toBeInTheDocument()
   })
 })
