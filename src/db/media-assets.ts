@@ -37,6 +37,8 @@ const OVERSIZED_STORED_BACK_IMAGE_MESSAGE =
   'Back image must be 2 MB or smaller after local optimization.'
 const INVALID_BACK_IMAGE_DIMENSIONS_MESSAGE =
   'Back image dimensions are invalid.'
+const MISMATCHED_BACK_IMAGE_TYPE_MESSAGE =
+  'Back image type does not match the selected file.'
 const BACK_IMAGE_PROCESSING_ERROR_MESSAGE =
   'Back image could not be processed on this device.'
 
@@ -284,9 +286,16 @@ export function normalizeBackImageDraft(backImage: BackImageDraft) {
     backImage.mimeType,
     backImage.fileName ?? '',
   )
+  const normalizedBlobMimeType = backImage.blob.type
+    ? inferImageMimeType(backImage.blob.type, backImage.fileName ?? '')
+    : null
 
   if (!isAllowedBackImageMimeType(normalizedMimeType)) {
     throw new Error(UNSUPPORTED_BACK_IMAGE_MESSAGE)
+  }
+
+  if (normalizedBlobMimeType && normalizedBlobMimeType !== normalizedMimeType) {
+    throw new Error(MISMATCHED_BACK_IMAGE_TYPE_MESSAGE)
   }
 
   if (
