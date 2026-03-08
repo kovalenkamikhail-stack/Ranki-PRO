@@ -70,12 +70,49 @@ describe('deck persistence', () => {
       {
         name: '  English B1  ',
         description: '  Daily review  ',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
       },
       database,
     )
 
     expect(updatedDeck.name).toBe('English B1')
     expect(updatedDeck.description).toBe('Daily review')
+    expect(updatedDeck.useGlobalLimits).toBe(true)
+    expect(updatedDeck.newCardsPerDayOverride).toBeNull()
+    expect(updatedDeck.maxReviewsPerDayOverride).toBeNull()
+    expect(updatedDeck.createdAt).toBe(1_000)
+    expect(updatedDeck.updatedAt).toBe(2_000)
+  })
+
+  it('updates deck-specific study limits and can turn off global inheritance', async () => {
+    database = new RankiDb(`ranki-decks-${crypto.randomUUID()}`)
+    nowMsMock.mockReturnValueOnce(1_000).mockReturnValueOnce(2_000)
+
+    const createdDeck = await createDeck(
+      {
+        name: 'English',
+        description: null,
+      },
+      database,
+    )
+
+    const updatedDeck = await updateDeck(
+      createdDeck.id,
+      {
+        name: 'English',
+        description: 'Focused review',
+        useGlobalLimits: false,
+        newCardsPerDayOverride: 5,
+        maxReviewsPerDayOverride: 25,
+      },
+      database,
+    )
+
+    expect(updatedDeck.useGlobalLimits).toBe(false)
+    expect(updatedDeck.newCardsPerDayOverride).toBe(5)
+    expect(updatedDeck.maxReviewsPerDayOverride).toBe(25)
     expect(updatedDeck.createdAt).toBe(1_000)
     expect(updatedDeck.updatedAt).toBe(2_000)
   })
