@@ -22,6 +22,7 @@ import {
 import { bootstrapAppDb } from '@/db/bootstrap'
 import { deleteCardCascade, listCardsForDeck } from '@/db/cards'
 import { getDeck } from '@/db/decks'
+import { loadDeckStudySession } from '@/db/study-session'
 import type { Card as DeckCard, CardState } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
 
@@ -109,6 +110,10 @@ function MissingDeckIdState() {
 function DeckWorkspace({ deckId }: { deckId: string }) {
   const [deck, setDeck] = useState<Deck | null>(null)
   const [cards, setCards] = useState<DeckCard[]>([])
+  const [studyCounts, setStudyCounts] = useState({
+    dueCount: 0,
+    newCount: 0,
+  })
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -119,8 +124,14 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
     let isMounted = true
 
     void bootstrapAppDb()
-      .then(() => Promise.all([getDeck(deckId), listCardsForDeck(deckId)]))
-      .then(([nextDeck, nextCards]) => {
+      .then(() =>
+        Promise.all([
+          getDeck(deckId),
+          listCardsForDeck(deckId),
+          loadDeckStudySession(deckId),
+        ]),
+      )
+      .then(([nextDeck, nextCards, nextSession]) => {
         if (!isMounted) {
           return
         }
@@ -132,6 +143,10 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
 
         setDeck(nextDeck)
         setCards(nextCards)
+        setStudyCounts({
+          dueCount: nextSession?.queue.dueCards.length ?? 0,
+          newCount: nextSession?.queue.newCards.length ?? 0,
+        })
       })
       .catch((nextError: unknown) => {
         if (isMounted) {
@@ -172,10 +187,16 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
       )
 
       const refreshedDeck = await getDeck(deckId)
+      const refreshedSession = await loadDeckStudySession(deckId)
 
       if (refreshedDeck) {
         setDeck(refreshedDeck)
       }
+
+      setStudyCounts({
+        dueCount: refreshedSession?.queue.dueCards.length ?? 0,
+        newCount: refreshedSession?.queue.newCards.length ?? 0,
+      })
     } catch (nextError: unknown) {
       setActionError(
         nextError instanceof Error ? nextError.message : 'Failed to delete card.',
@@ -289,35 +310,33 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
                 <p className="text-sm font-medium text-muted-foreground">
+                  Due today
+                </p>
+                <p className="mt-2 text-3xl font-semibold">
+                  {studyCounts.dueCount}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Eligible due cards from the saved study queue.
+                </p>
+              </div>
+
+              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+                <p className="text-sm font-medium text-muted-foreground">
+                  New today
+                </p>
+                <p className="mt-2 text-3xl font-semibold">{studyCounts.newCount}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Available new cards after current limits.
+                </p>
+              </div>
+
+              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+                <p className="text-sm font-medium text-muted-foreground">
                   Cards stored
                 </p>
                 <p className="mt-2 text-3xl font-semibold">{cards.length}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Listed directly from IndexedDB for this deck.
-                </p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Limits mode
-                </p>
-                <p className="mt-2 text-xl font-semibold">
-                  {deck.useGlobalLimits ? 'Global defaults' : 'Deck override'}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Queue building now runs in the study route.
-                </p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Last updated
-                </p>
-                <p className="mt-2 text-xl font-semibold">
-                  {formatTimestamp(deck.updatedAt)}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Saved locally on this device.
                 </p>
               </div>
             </div>
@@ -370,17 +389,28 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
               <p className="text-sm font-medium text-muted-foreground">
-                New card order
+                Limits mode
               </p>
-              <p className="mt-2 text-base font-semibold">Oldest first</p>
+              <p className="mt-2 text-base font-semibold">
+                {deck.useGlobalLimits ? 'Global defaults' : 'Deck override'}
+              </p>
             </div>
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
               <p className="text-sm font-medium text-muted-foreground">
-                Offline trust
+                New card order
               </p>
               <p className="mt-2 text-base font-semibold">
-                Deck and card list read from IndexedDB only
+                Oldest first
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                Last updated
+              </p>
+              <p className="mt-2 text-base font-semibold">
+                {formatTimestamp(deck.updatedAt)}
               </p>
             </div>
           </CardContent>

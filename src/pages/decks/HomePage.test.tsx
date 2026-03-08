@@ -3,13 +3,17 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HomePage } from '@/pages/decks/HomePage'
 
-const { bootstrapAppDbMock, deleteDeckCascadeMock, listDecksMock } = vi.hoisted(
-  () => ({
+const {
+  bootstrapAppDbMock,
+  deleteDeckCascadeMock,
+  listDecksMock,
+  loadDeckStudySessionMock,
+} = vi.hoisted(() => ({
     bootstrapAppDbMock: vi.fn(),
     deleteDeckCascadeMock: vi.fn(),
     listDecksMock: vi.fn(),
-  }),
-)
+    loadDeckStudySessionMock: vi.fn(),
+  }))
 
 vi.mock('@/db/bootstrap', () => ({
   bootstrapAppDb: bootstrapAppDbMock,
@@ -18,6 +22,10 @@ vi.mock('@/db/bootstrap', () => ({
 vi.mock('@/db/decks', () => ({
   deleteDeckCascade: deleteDeckCascadeMock,
   listDecks: listDecksMock,
+}))
+
+vi.mock('@/db/study-session', () => ({
+  loadDeckStudySession: loadDeckStudySessionMock,
 }))
 
 function renderHomePage() {
@@ -33,7 +41,15 @@ describe('HomePage', () => {
     bootstrapAppDbMock.mockReset()
     deleteDeckCascadeMock.mockReset()
     listDecksMock.mockReset()
+    loadDeckStudySessionMock.mockReset()
     bootstrapAppDbMock.mockResolvedValue(undefined)
+    loadDeckStudySessionMock.mockResolvedValue({
+      queue: {
+        dueCards: [],
+        newCards: [],
+        cards: [],
+      },
+    })
   })
 
   it('keeps the empty state hidden while decks are still loading', async () => {
@@ -75,6 +91,8 @@ describe('HomePage', () => {
     renderHomePage()
 
     expect(await screen.findByText('Spanish')).toBeInTheDocument()
+    expect(screen.getByText('Due 0')).toBeInTheDocument()
+    expect(screen.getByText('New 0')).toBeInTheDocument()
     expect(screen.queryByText('No decks yet on this device.')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Spanish' }))
@@ -97,5 +115,34 @@ describe('HomePage', () => {
       'IndexedDB unavailable',
     )
     expect(screen.queryByText('No decks yet on this device.')).not.toBeInTheDocument()
+  })
+
+  it('shows due and new counts from the existing study-session seam on each deck card', async () => {
+    listDecksMock.mockResolvedValue([
+      {
+        id: 'deck-1',
+        name: 'Spanish',
+        description: 'Travel phrases',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 10,
+        updatedAt: 10,
+      },
+    ])
+    loadDeckStudySessionMock.mockResolvedValue({
+      queue: {
+        dueCards: [{ id: 'due-1' }],
+        newCards: [{ id: 'new-1' }, { id: 'new-2' }],
+        cards: [{ id: 'due-1' }, { id: 'new-1' }, { id: 'new-2' }],
+      },
+    })
+
+    renderHomePage()
+
+    expect(await screen.findByText('Spanish')).toBeInTheDocument()
+    expect(screen.getByText('Due 1')).toBeInTheDocument()
+    expect(screen.getByText('New 2')).toBeInTheDocument()
   })
 })
