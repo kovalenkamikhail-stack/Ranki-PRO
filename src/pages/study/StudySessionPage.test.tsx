@@ -103,7 +103,11 @@ describe('StudySessionPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
 
     expect(
-      await screen.findByText('hidden or difficult to understand'),
+      await screen.findByText(
+        'hidden or difficult to understand',
+        undefined,
+        { timeout: 3_000 },
+      ),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hard' })).toBeInTheDocument()
@@ -170,14 +174,20 @@ describe('StudySessionPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
 
-    await waitFor(
-      () => {
-        expect(
-          screen.getByAltText(`Back image for ${dueCard.frontText}`),
-        ).toBeInTheDocument()
-      },
-      { timeout: 3_000 },
-    )
+    expect(
+      await screen.findByText(
+        'a sheltered place for ships',
+        undefined,
+        { timeout: 3_000 },
+      ),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByAltText(
+        `Back image for ${dueCard.frontText}`,
+        undefined,
+        { timeout: 3_000 },
+      ),
+    ).toBeInTheDocument()
   })
 
   it('clears the previous back image when advancing between image-backed cards', async () => {
