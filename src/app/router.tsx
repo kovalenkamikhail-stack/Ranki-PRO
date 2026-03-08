@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { ShellErrorBoundary } from '@/app/shell/ShellErrorBoundary'
 import { AppShell } from '@/app/shell/AppShell'
 import { EditCardPage } from '@/pages/cards/EditCardPage'
+import { CaptureCardPage } from '@/pages/capture/CaptureCardPage'
 import { DeckDetailsPage } from '@/pages/decks/DeckDetailsPage'
 import { EditDeckPage } from '@/pages/decks/EditDeckPage'
 import { HomePage } from '@/pages/decks/HomePage'
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: 'decks/new',
         element: <EditDeckPage mode="create" />,
+      },
+      {
+        path: 'capture/card',
+        element: <CaptureCardPage />,
       },
       {
         path: 'decks/:deckId',

@@ -44,6 +44,7 @@ function renderWithRouter(initialEntry: string, element: ReactNode) {
     [
       { path: '/', element: <div>Decks home</div> },
       { path: '/decks/:deckId', element: <div>Deck workspace route</div> },
+      { path: '/capture/card', element: <div>Capture route</div> },
       { path: '/decks/:deckId/cards/new', element },
       { path: '/decks/:deckId/cards/:cardId/edit', element },
     ],
@@ -128,6 +129,46 @@ describe('EditCardPage', () => {
     })
 
     expect(await screen.findByText('Deck workspace route')).toBeInTheDocument()
+  })
+
+  it('prefills the create-card editor from a quick capture url and keeps context as reference only', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-1',
+      name: 'Spanish',
+      description: 'Travel phrases',
+    })
+    createCardMock.mockResolvedValue({
+      id: 'card-1',
+      deckId: 'deck-1',
+      frontText: 'obscure',
+      backText: 'unclear',
+    })
+
+    renderWithRouter(
+      '/decks/deck-1/cards/new?front=obscure&back=hidden%20from%20view&context=Seen%20in%20a%20sentence.',
+      <EditCardPage mode="create" />,
+    )
+
+    expect(await screen.findByDisplayValue('obscure')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('hidden from view')).toBeInTheDocument()
+    expect(screen.getByText('Quick capture draft')).toBeInTheDocument()
+    expect(
+      screen.getByText('Captured context (not auto-saved)'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Seen in a sentence.')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Back text'), {
+      target: { value: '  unclear  ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Create card' }))
+
+    await waitFor(() => {
+      expect(createCardMock).toHaveBeenCalledWith('deck-1', {
+        frontText: 'obscure',
+        backText: 'unclear',
+        backImage: null,
+      })
+    })
   })
 
   it('creates a card with one selected back image', async () => {
