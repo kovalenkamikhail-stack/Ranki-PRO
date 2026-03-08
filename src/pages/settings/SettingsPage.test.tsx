@@ -6,8 +6,16 @@ import { bootstrapAppDb } from '@/db/bootstrap'
 import { APP_SETTINGS_ID } from '@/entities/app-settings'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 
+const { importAnkiPackageMock } = vi.hoisted(() => ({
+  importAnkiPackageMock: vi.fn(),
+}))
+
 vi.mock('@/lib/storage-persistence', () => ({
   ensureStoragePersistence: vi.fn().mockResolvedValue('granted'),
+}))
+
+vi.mock('@/importers/anki-apkg', () => ({
+  importAnkiPackage: importAnkiPackageMock,
 }))
 
 function renderSettingsPage() {
@@ -25,6 +33,7 @@ async function resetAppDb() {
 
 describe('SettingsPage', () => {
   beforeEach(async () => {
+    importAnkiPackageMock.mockReset()
     await resetAppDb()
     await bootstrapAppDb(appDb)
   })
@@ -58,5 +67,48 @@ describe('SettingsPage', () => {
       expect(settings?.globalNewCardsPerDay).toBe(7)
       expect(settings?.globalMaxReviewsPerDay).toBe(40)
     })
+  })
+
+  it('imports a selected apkg package and shows the image-preserving summary', async () => {
+    importAnkiPackageMock.mockResolvedValue({
+      deckCount: 1,
+      cardCount: 105,
+      importedImageCount: 39,
+      skippedCardCount: 0,
+      skippedImageCount: 0,
+      decks: [
+        {
+          id: 'deck-imported',
+          name: 'Imported English',
+          cardCount: 105,
+        },
+      ],
+    })
+
+    renderSettingsPage()
+
+    const apkgFile = new File(['anki-package'], 'english.apkg', {
+      type: 'application/octet-stream',
+    })
+
+    fireEvent.change(screen.getByLabelText('Anki apkg file'), {
+      target: { files: [apkgFile] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Import package' }))
+
+    await waitFor(() => {
+      expect(importAnkiPackageMock).toHaveBeenCalledWith(apkgFile)
+    })
+
+    expect(
+      await screen.findByText('Imported 105 cards into 1 deck.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Imported English')).toBeInTheDocument()
+    expect(
+      screen.getByText('Preserved 39 back images from the package.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/Left out .* images that could not be mapped/i),
+    ).not.toBeInTheDocument()
   })
 })
