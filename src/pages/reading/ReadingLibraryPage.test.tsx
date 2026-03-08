@@ -133,5 +133,9 @@ describe('ReadingLibraryPage', () => {
     expect(
       screen.getByRole('link', { name: 'Resume reading My article' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Edit My article' })).toHaveAttribute(
+      'href',
+      '/reading/reading-1/edit',
+    )
   })
 })

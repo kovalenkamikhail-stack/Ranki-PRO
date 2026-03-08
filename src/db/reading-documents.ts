@@ -92,6 +92,32 @@ export async function createReadingDocument(
   return document
 }
 
+export async function updateReadingDocument(
+  documentId: string,
+  draft: ReadingDocumentDraft,
+  database: RankiDb = appDb,
+) {
+  return database.transaction('rw', database.readingDocuments, async () => {
+    const existing = await database.readingDocuments.get(documentId)
+
+    if (!existing) {
+      throw new Error('Reading document not found.')
+    }
+
+    const normalized = normalizeReadingDocumentDraft(draft)
+    const updated: ReadingDocument = {
+      ...existing,
+      title: normalized.title,
+      bodyText: normalized.bodyText,
+      wordCount: countWords(normalized.bodyText),
+      updatedAt: nowMs(),
+    }
+
+    await database.readingDocuments.put(updated)
+    return updated
+  })
+}
+
 export async function markReadingDocumentOpened(
   documentId: string,
   database: RankiDb = appDb,
@@ -135,5 +161,21 @@ export async function saveReadingDocumentProgress(
 
     await database.readingDocuments.put(updated)
     return updated
+  })
+}
+
+export async function deleteReadingDocument(
+  documentId: string,
+  database: RankiDb = appDb,
+) {
+  return database.transaction('rw', database.readingDocuments, async () => {
+    const existing = await database.readingDocuments.get(documentId)
+
+    if (!existing) {
+      throw new Error('Reading document not found.')
+    }
+
+    await database.readingDocuments.delete(documentId)
+    return existing
   })
 }

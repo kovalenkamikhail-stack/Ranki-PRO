@@ -93,6 +93,10 @@ describe('ReadingDocumentPage', () => {
     expect(markReadingDocumentOpenedMock).toHaveBeenCalledWith('reading-1')
     expect(screen.getByText('Resume point')).toBeInTheDocument()
     expect(screen.getByText('35%')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Edit reading note' })).toHaveAttribute(
+      'href',
+      '/reading/reading-1/edit',
+    )
 
     const scrollRegion = screen.getByLabelText('Reading document content')
     Object.defineProperty(scrollRegion, 'scrollHeight', {

@@ -5,6 +5,7 @@ import {
   LibraryBig,
   LoaderCircle,
   NotebookPen,
+  PencilLine,
   Plus,
 } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
@@ -383,16 +384,28 @@ function ReadingDocumentsSection({
                       : 'Start from the beginning in the calm reader view.'}
                   </p>
 
-                  <Button asChild className="w-full sm:w-auto">
-                    <Link
-                      to={`/reading/${document.id}`}
-                      aria-label={`${openActionLabel} ${document.title}`}
-                    >
-                      <BookOpenText className="mr-2 h-4 w-4" />
-                      {openActionLabel}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
+                  <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                    <Button asChild className="w-full sm:w-auto">
+                      <Link
+                        to={`/reading/${document.id}`}
+                        aria-label={`${openActionLabel} ${document.title}`}
+                      >
+                        <BookOpenText className="mr-2 h-4 w-4" />
+                        {openActionLabel}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+
+                    <Button asChild variant="outline" className="w-full sm:w-auto">
+                      <Link
+                        to={`/reading/${document.id}/edit`}
+                        aria-label={`Edit ${document.title}`}
+                      >
+                        <PencilLine className="mr-2 h-4 w-4" />
+                        Edit
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

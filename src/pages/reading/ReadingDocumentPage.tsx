@@ -5,6 +5,7 @@ import {
   Columns2,
   FileText,
   LoaderCircle,
+  PencilLine,
   StretchHorizontal,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -180,13 +181,10 @@ function ReadingDocumentWorkspace({ documentId }: { documentId: string }) {
         return
       }
 
-      const nextProgress = scrollContainerRef.current
-        ? getScrollProgress(scrollContainerRef.current)
-        : latestProgressRef.current
-
-      latestProgressRef.current = nextProgress
-
-      void saveReadingDocumentProgress(latestDocumentId, nextProgress).catch(() => {
+      void saveReadingDocumentProgress(
+        latestDocumentId,
+        latestProgressRef.current,
+      ).catch(() => {
         // Best-effort flush on exit; the next visit can still use the last saved value.
       })
     }
@@ -397,6 +395,13 @@ function ReadingDocumentWorkspace({ documentId }: { documentId: string }) {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            <Button asChild size="lg">
+              <Link to={`/reading/${document.id}/edit`}>
+                <PencilLine className="mr-2 h-4 w-4" />
+                Edit reading note
+              </Link>
+            </Button>
+
             <Button asChild variant="outline" size="lg">
               <Link to="/reading">
                 <ArrowLeft className="mr-2 h-4 w-4" />

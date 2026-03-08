@@ -6,6 +6,7 @@ import { CaptureCardPage } from '@/pages/capture/CaptureCardPage'
 import { DeckDetailsPage } from '@/pages/decks/DeckDetailsPage'
 import { EditDeckPage } from '@/pages/decks/EditDeckPage'
 import { HomePage } from '@/pages/decks/HomePage'
+import { EditReadingDocumentPage } from '@/pages/reading/EditReadingDocumentPage'
 import { ReadingDocumentPage } from '@/pages/reading/ReadingDocumentPage'
 import { ReadingLibraryPage } from '@/pages/reading/ReadingLibraryPage'
 import { NotFoundPage } from '@/pages/shared/NotFoundPage'
@@ -62,6 +63,10 @@ export const router = createBrowserRouter([
       {
         path: 'reading/:documentId',
         element: <ReadingDocumentPage />,
+      },
+      {
+        path: 'reading/:documentId/edit',
+        element: <EditReadingDocumentPage />,
       },
       {
         path: 'statistics',
