@@ -6,7 +6,12 @@ export const rankiSchemaV1 = {
   appSettings: 'id',
 } as const
 
-export const rankiSchema = {
+export const rankiSchemaV2 = {
   ...rankiSchemaV1,
   mediaBlobs: 'blobRef, createdAt',
+} as const
+
+export const rankiSchema = {
+  ...rankiSchemaV2,
+  readingDocuments: 'id, updatedAt, lastOpenedAt, createdAt',
 } as const

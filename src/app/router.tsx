@@ -5,6 +5,8 @@ import { EditCardPage } from '@/pages/cards/EditCardPage'
 import { DeckDetailsPage } from '@/pages/decks/DeckDetailsPage'
 import { EditDeckPage } from '@/pages/decks/EditDeckPage'
 import { HomePage } from '@/pages/decks/HomePage'
+import { ReadingDocumentPage } from '@/pages/reading/ReadingDocumentPage'
+import { ReadingLibraryPage } from '@/pages/reading/ReadingLibraryPage'
 import { NotFoundPage } from '@/pages/shared/NotFoundPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { StudySessionPage } from '@/pages/study/StudySessionPage'
@@ -46,6 +48,14 @@ export const router = createBrowserRouter([
       {
         path: 'settings',
         element: <SettingsPage />,
+      },
+      {
+        path: 'reading',
+        element: <ReadingLibraryPage />,
+      },
+      {
+        path: 'reading/:documentId',
+        element: <ReadingDocumentPage />,
       },
       {
         path: '*',
