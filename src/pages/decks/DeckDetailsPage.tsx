@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { CardBackImage } from '@/components/cards/CardBackImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,6 +23,7 @@ import {
 import { bootstrapAppDb } from '@/db/bootstrap'
 import { deleteCardCascade, listCardsForDeck } from '@/db/cards'
 import { getDeck } from '@/db/decks'
+import { listCardBackImages, type CardBackImage as StoredCardBackImage } from '@/db/media-assets'
 import { loadDeckStudySession } from '@/db/study-session'
 import type { Card as DeckCard, CardState } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
@@ -80,6 +82,10 @@ function getDueLabel(card: DeckCard) {
   return `Due ${formatTimestamp(card.dueAt)}`
 }
 
+function getCardBackImageAlt(card: DeckCard) {
+  return `Back image for ${card.frontText}`
+}
+
 function MissingDeckIdState() {
   return (
     <Card className="mx-auto max-w-4xl">
@@ -113,6 +119,9 @@ function MissingDeckIdState() {
 function DeckWorkspace({ deckId }: { deckId: string }) {
   const [deck, setDeck] = useState<Deck | null>(null)
   const [cards, setCards] = useState<DeckCard[]>([])
+  const [cardBackImages, setCardBackImages] = useState<
+    Map<string, StoredCardBackImage>
+  >(new Map())
   const [studySummary, setStudySummary] = useState<DeckStudySummary>(
     EMPTY_STUDY_SUMMARY,
   )
@@ -133,7 +142,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
           loadDeckStudySession(deckId),
         ]),
       )
-      .then(([nextDeck, nextCards, nextSession]) => {
+      .then(async ([nextDeck, nextCards, nextSession]) => {
         if (!isMounted) {
           return
         }
@@ -143,8 +152,15 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
           return
         }
 
+        const nextCardBackImages = await listCardBackImages(nextCards)
+
+        if (!isMounted) {
+          return
+        }
+
         setDeck(nextDeck)
         setCards(nextCards)
+        setCardBackImages(nextCardBackImages)
         setStudySummary(getDeckStudySummary(nextSession))
       })
       .catch((nextError: unknown) => {
@@ -184,6 +200,11 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
       setCards((currentCards) =>
         currentCards.filter((currentCard) => currentCard.id !== card.id),
       )
+      setCardBackImages((currentCardBackImages) => {
+        const nextCardBackImages = new Map(currentCardBackImages)
+        nextCardBackImages.delete(card.id)
+        return nextCardBackImages
+      })
 
       const refreshedDeck = await getDeck(deckId)
       const refreshedSession = await loadDeckStudySession(deckId)
@@ -518,11 +539,19 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
                     <p className="mt-2 text-sm leading-6 text-foreground">
                       {getPreviewText(card.backText)}
                     </p>
+                    {cardBackImages.get(card.id) ? (
+                      <CardBackImage
+                        blob={cardBackImages.get(card.id)!.blob}
+                        alt={getCardBackImageAlt(card)}
+                        className="mt-4 max-h-48 w-full rounded-[1rem] border border-border/70 object-cover"
+                      />
+                    ) : null}
                   </div>
 
                   <p className="text-sm text-muted-foreground">
-                    Text-first card editing stays here. Review actions now run
-                    from the deck-scoped study route.
+                    {card.backImageAssetId
+                      ? 'This card keeps its optional back image local to this device. Review actions still run from the deck-scoped study route.'
+                      : 'Text-only cards still work as before. Review actions now run from the deck-scoped study route.'}
                   </p>
 
                   <div className="flex flex-wrap gap-3">

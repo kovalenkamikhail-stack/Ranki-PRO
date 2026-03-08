@@ -8,6 +8,7 @@ import {
 } from '@/db/decks'
 import type { Card } from '@/entities/card'
 import type { MediaAsset } from '@/entities/media-asset'
+import type { MediaBlob } from '@/entities/media-blob'
 import type { ReviewLog } from '@/entities/review-log'
 
 const { nowMsMock } = vi.hoisted(() => ({
@@ -211,9 +212,20 @@ describe('deck persistence', () => {
       cardId: keepCard.id,
       deckId: keepDeck.id,
     }
+    const targetBlob: MediaBlob = {
+      blobRef: targetAsset.blobRef,
+      blob: new Blob(['target-image'], { type: 'image/png' }),
+      createdAt: 10,
+    }
+    const keepBlob: MediaBlob = {
+      blobRef: keepAsset.blobRef,
+      blob: new Blob(['keep-image'], { type: 'image/png' }),
+      createdAt: 10,
+    }
 
     await database.cards.bulkAdd([targetCard, keepCard])
     await database.mediaAssets.bulkAdd([targetAsset, keepAsset])
+    await database.mediaBlobs.bulkAdd([targetBlob, keepBlob])
     await database.reviewLogs.bulkAdd([targetLog, keepLog])
 
     await deleteDeckCascade(targetDeck.id, database)
@@ -221,11 +233,13 @@ describe('deck persistence', () => {
     expect(await database.decks.get(targetDeck.id)).toBeUndefined()
     expect(await database.cards.get(targetCard.id)).toBeUndefined()
     expect(await database.mediaAssets.get(targetAsset.id)).toBeUndefined()
+    expect(await database.mediaBlobs.get(targetBlob.blobRef)).toBeUndefined()
     expect(await database.reviewLogs.get(targetLog.id)).toBeUndefined()
 
     expect(await database.decks.get(keepDeck.id)).toEqual(keepDeck)
     expect(await database.cards.get(keepCard.id)).toEqual(keepCard)
     expect(await database.mediaAssets.get(keepAsset.id)).toEqual(keepAsset)
+    expect(await database.mediaBlobs.get(keepBlob.blobRef)).toBeDefined()
     expect(await database.reviewLogs.get(keepLog.id)).toEqual(keepLog)
   })
 })

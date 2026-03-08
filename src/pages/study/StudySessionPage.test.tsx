@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { appDb } from '@/db/app-db'
 import type { Card } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
+import type { MediaAsset } from '@/entities/media-asset'
+import type { MediaBlob } from '@/entities/media-blob'
 import { StudySessionPage } from '@/pages/study/StudySessionPage'
 
 function buildDeck(overrides: Partial<Deck> = {}): Deck {
@@ -118,6 +120,59 @@ describe('StudySessionPage', () => {
       screen.queryByText('hidden or difficult to understand'),
     ).not.toBeInTheDocument()
     expect(await appDb.reviewLogs.count()).toBe(1)
+  })
+
+  it('renders the attached back image only after the answer is revealed', async () => {
+    const now = Date.now()
+    const deck = buildDeck({ id: 'deck-1' })
+    const dueCard = buildCard({
+      id: 'due-card',
+      deckId: deck.id,
+      frontText: 'harbor',
+      backText: 'a sheltered place for ships',
+      backImageAssetId: 'asset-1',
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 1_000,
+      lastReviewedAt: now - 5_000,
+      createdAt: 20,
+      updatedAt: 20,
+    })
+    const dueCardAsset: MediaAsset = {
+      id: 'asset-1',
+      cardId: dueCard.id,
+      kind: 'image',
+      mimeType: 'image/png',
+      fileName: 'harbor.png',
+      sizeBytes: 128,
+      blobRef: 'media-blob:asset-1',
+      width: null,
+      height: null,
+      createdAt: 20,
+    }
+    const dueCardBlob: MediaBlob = {
+      blobRef: dueCardAsset.blobRef,
+      blob: new Blob(['harbor-image'], { type: 'image/png' }),
+      createdAt: 20,
+    }
+
+    await appDb.decks.add(deck)
+    await appDb.cards.add(dueCard)
+    await appDb.mediaAssets.add(dueCardAsset)
+    await appDb.mediaBlobs.add(dueCardBlob)
+
+    renderStudySession()
+
+    expect(await screen.findByRole('heading', { name: 'harbor' })).toBeInTheDocument()
+    expect(
+      screen.queryByAltText(`Back image for ${dueCard.frontText}`),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
+
+    expect(
+      await screen.findByAltText(`Back image for ${dueCard.frontText}`),
+    ).toBeInTheDocument()
   })
 
   it('shows the empty deck state instead of the old placeholder copy', async () => {

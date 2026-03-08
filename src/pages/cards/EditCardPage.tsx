@@ -1,6 +1,7 @@
 import { ArrowLeft, BookMarked, Rows3, Save, Trash2 } from 'lucide-react'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { CardBackImage } from '@/components/cards/CardBackImage'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -11,6 +12,12 @@ import {
 } from '@/components/ui/card'
 import { createCard, deleteCardCascade, getCard, updateCard } from '@/db/cards'
 import { getDeck } from '@/db/decks'
+import {
+  createBackImageDraft,
+  getCardBackImage,
+  type BackImageDraft,
+  type CardBackImage as StoredCardBackImage,
+} from '@/db/media-assets'
 import type { Card as CardRecord } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
 
@@ -20,6 +27,43 @@ interface EditCardPageProps {
 
 const inputClassName =
   'mt-2 w-full rounded-[1.15rem] border border-input bg-background/85 px-4 py-3 text-sm text-foreground shadow-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/40'
+
+type BackImageFieldState =
+  | { kind: 'none' }
+  | { kind: 'stored'; image: StoredCardBackImage }
+  | { kind: 'draft'; image: BackImageDraft }
+
+function formatBytes(sizeBytes: number) {
+  if (sizeBytes < 1024) {
+    return `${sizeBytes} B`
+  }
+
+  const sizeInKb = sizeBytes / 1024
+
+  if (sizeInKb < 1024) {
+    return `${sizeInKb.toFixed(1)} KB`
+  }
+
+  return `${(sizeInKb / 1024).toFixed(1)} MB`
+}
+
+function getBackImageMeta(backImage: BackImageFieldState) {
+  if (backImage.kind === 'stored') {
+    return {
+      fileName: backImage.image.asset.fileName,
+      sizeBytes: backImage.image.asset.sizeBytes,
+    }
+  }
+
+  if (backImage.kind === 'draft') {
+    return {
+      fileName: backImage.image.fileName,
+      sizeBytes: backImage.image.sizeBytes,
+    }
+  }
+
+  return null
+}
 
 function EditorUnavailableState({
   title,
@@ -65,6 +109,9 @@ export function EditCardPage({ mode }: EditCardPageProps) {
   const [card, setCard] = useState<CardRecord | null>(null)
   const [frontText, setFrontText] = useState('')
   const [backText, setBackText] = useState('')
+  const [backImage, setBackImage] = useState<BackImageFieldState>({
+    kind: 'none',
+  })
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -72,6 +119,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
   const [isMissingCard, setIsMissingCard] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const backImageMeta = getBackImageMeta(backImage)
 
   useEffect(() => {
     if (!deckId) {
@@ -101,6 +149,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
       if (mode === 'create') {
         if (isMounted) {
           setDeck(nextDeck)
+          setBackImage({ kind: 'none' })
         }
         return
       }
@@ -116,10 +165,26 @@ export function EditCardPage({ mode }: EditCardPageProps) {
       }
 
       if (isMounted) {
+        const nextBackImage = await getCardBackImage(nextCard)
+
+        if (!isMounted) {
+          return
+        }
+
         setDeck(nextDeck)
         setCard(nextCard)
         setFrontText(nextCard.frontText)
         setBackText(nextCard.backText)
+        setBackImage(
+          nextBackImage
+            ? {
+                kind: 'stored',
+                image: nextBackImage,
+              }
+            : {
+                kind: 'none',
+              },
+        )
       }
     }
 
@@ -143,6 +208,31 @@ export function EditCardPage({ mode }: EditCardPageProps) {
       isMounted = false
     }
   }, [cardId, deckId, mode])
+
+  const handleBackImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!selectedFile) {
+      return
+    }
+
+    if (!selectedFile.type.startsWith('image/')) {
+      setSaveError('Back image must be an image file.')
+      return
+    }
+
+    setBackImage({
+      kind: 'draft',
+      image: createBackImageDraft(selectedFile),
+    })
+    setSaveError(null)
+  }
+
+  const handleRemoveBackImage = () => {
+    setBackImage({ kind: 'none' })
+    setSaveError(null)
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -174,9 +264,20 @@ export function EditCardPage({ mode }: EditCardPageProps) {
     setSaveError(null)
 
     try {
+      const backImageDraft =
+        mode === 'create'
+          ? backImage.kind === 'draft'
+            ? backImage.image
+            : null
+          : backImage.kind === 'draft'
+            ? backImage.image
+            : backImage.kind === 'none' && card?.backImageAssetId
+              ? null
+              : undefined
       const draft = {
         frontText: trimmedFrontText,
         backText: trimmedBackText,
+        backImage: backImageDraft,
       }
 
       if (mode === 'create') {
@@ -292,8 +393,8 @@ export function EditCardPage({ mode }: EditCardPageProps) {
           </CardTitle>
           <CardDescription className="text-base">
             {mode === 'create'
-              ? 'Create a text-first card inside the current deck. Image upload and review actions stay in later slices.'
-              : 'Update the front and back text for this local card without changing study state or media.'}
+              ? 'Create a local card with required front/back text and one optional image on the back.'
+              : 'Update the front and back text for this local card and keep, replace, or remove its optional back image.'}
           </CardDescription>
         </div>
       </CardHeader>
@@ -306,11 +407,13 @@ export function EditCardPage({ mode }: EditCardPageProps) {
           </p>
           {card ? (
             <p className="mt-1 text-sm text-muted-foreground">
-              Editing the saved front/back copy for this deck-scoped card.
+              Editing the saved front/back copy and optional back image for this
+              deck-scoped card.
             </p>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              New cards save directly to this deck in Dexie.
+              New cards save directly to this deck in Dexie with an optional
+              image stored only on this device.
             </p>
           )}
         </div>
@@ -344,9 +447,70 @@ export function EditCardPage({ mode }: EditCardPageProps) {
             />
           </label>
 
-          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-            Text-only CRUD is live in this slice. Back images, scheduler rules,
-            and study session behavior stay out of scope.
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">
+                  Back image (optional)
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Attach one image to the back of this card. It stays local to
+                  this device in MVP.
+                </p>
+              </div>
+
+              {backImage.kind !== 'none' ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleRemoveBackImage}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Remove image
+                </Button>
+              ) : null}
+            </div>
+
+            <label className="mt-4 block text-sm font-medium text-foreground">
+              Choose image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBackImageChange}
+                className={inputClassName}
+              />
+            </label>
+
+            {backImage.kind === 'none' ? (
+              <p className="mt-4 text-sm text-muted-foreground">
+                No back image attached. Text-only cards still work exactly as
+                before.
+              </p>
+            ) : (
+              <div className="mt-4 rounded-[1.3rem] border border-border/70 bg-background/80 p-4">
+                <CardBackImage
+                  blob={backImage.image.blob}
+                  alt={
+                    frontText.trim().length > 0
+                      ? `Back image for ${frontText.trim()}`
+                      : 'Back image preview'
+                  }
+                  className="max-h-64 w-full rounded-[1.1rem] border border-border/70 object-cover"
+                />
+                <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                  <p>
+                    {backImageMeta?.fileName ?? 'Attached image'} ·{' '}
+                    {formatBytes(backImageMeta?.sizeBytes ?? 0)}
+                  </p>
+                  <p>
+                    {backImage.kind === 'draft'
+                      ? 'This image will be saved when you submit the card.'
+                      : 'This image is already saved locally with the card.'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-3">

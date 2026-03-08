@@ -6,6 +6,8 @@ import { bootstrapAppDb } from '@/db/bootstrap'
 import { DeckDetailsPage } from '@/pages/decks/DeckDetailsPage'
 import type { Card } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
+import type { MediaAsset } from '@/entities/media-asset'
+import type { MediaBlob } from '@/entities/media-blob'
 
 function buildDeck(overrides: Partial<Deck> = {}): Deck {
   return {
@@ -54,6 +56,7 @@ describe('DeckDetailsPage', () => {
     await Promise.all([
       appDb.reviewLogs.clear(),
       appDb.mediaAssets.clear(),
+      appDb.mediaBlobs.clear(),
       appDb.cards.clear(),
       appDb.decks.clear(),
       appDb.appSettings.clear(),
@@ -65,6 +68,7 @@ describe('DeckDetailsPage', () => {
     await Promise.all([
       appDb.reviewLogs.clear(),
       appDb.mediaAssets.clear(),
+      appDb.mediaBlobs.clear(),
       appDb.cards.clear(),
       appDb.decks.clear(),
       appDb.appSettings.clear(),
@@ -123,9 +127,28 @@ describe('DeckDetailsPage', () => {
       createdAt: 30,
       updatedAt: 40,
     })
+    const secondCardAsset: MediaAsset = {
+      id: 'asset-1',
+      cardId: secondCard.id,
+      kind: 'image',
+      mimeType: 'image/png',
+      fileName: 'harbor.png',
+      sizeBytes: 128,
+      blobRef: 'media-blob:asset-1',
+      width: null,
+      height: null,
+      createdAt: 35,
+    }
+    const secondCardBlob: MediaBlob = {
+      blobRef: secondCardAsset.blobRef,
+      blob: new Blob(['harbor-image'], { type: 'image/png' }),
+      createdAt: 35,
+    }
 
     await appDb.decks.add(deck)
     await appDb.cards.bulkAdd([secondCard, firstCard])
+    await appDb.mediaAssets.add(secondCardAsset)
+    await appDb.mediaBlobs.add(secondCardBlob)
 
     renderDeckDetails()
 
@@ -140,10 +163,18 @@ describe('DeckDetailsPage', () => {
     expect(screen.getByText('Learning')).toBeInTheDocument()
     expect(screen.getByText('Review')).toBeInTheDocument()
     expect(
-      screen.getAllByText(
-        'Text-first card editing stays here. Review actions now run from the deck-scoped study route.',
-      ).length,
-    ).toBeGreaterThan(0)
+      await screen.findByAltText(`Back image for ${secondCard.frontText}`),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'This card keeps its optional back image local to this device. Review actions still run from the deck-scoped study route.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Text-only cards still work as before. Review actions now run from the deck-scoped study route.',
+      ),
+    ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Edit obscure' })).toHaveAttribute(
       'href',
       `/decks/${deck.id}/cards/${firstCard.id}/edit`,
