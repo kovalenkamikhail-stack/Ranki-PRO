@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appDb } from '@/db/app-db'
 import type { Card } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
@@ -57,11 +57,15 @@ async function resetAppDb() {
 
 describe('StudySessionPage', () => {
   beforeEach(async () => {
+    vi.restoreAllMocks()
+    vi.useRealTimers()
     await resetAppDb()
   })
 
   afterEach(async () => {
+    vi.useRealTimers()
     await resetAppDb()
+    vi.restoreAllMocks()
   })
 
   it('shows one current card, reveals the answer, and advances after rating', async () => {
@@ -102,14 +106,13 @@ describe('StudySessionPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
 
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument()
+    })
+
     expect(
-      await screen.findByText(
-        'hidden or difficult to understand',
-        undefined,
-        { timeout: 3_000 },
-      ),
+      screen.getByText('hidden or difficult to understand'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hard' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Good' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Easy' })).toBeInTheDocument()
@@ -329,5 +332,100 @@ describe('StudySessionPage', () => {
     expect(screen.getByText(/next retry unlocks at/i)).toBeInTheDocument()
     expect(screen.getByText(/keep this page open and the next card will appear automatically at/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Refresh queue' })).toBeInTheDocument()
+  })
+
+  it('shows the saved rating outcome with state, ladder, and next due feedback', async () => {
+    const now = new Date(2026, 2, 8, 12, 0, 0, 0).getTime()
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+
+    const deck = buildDeck({ id: 'deck-1' })
+    const dueCard = buildCard({
+      id: 'due-card',
+      deckId: deck.id,
+      frontText: 'obscure',
+      backText: 'hidden or difficult to understand',
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 1_000,
+      lastReviewedAt: now - 5_000,
+      createdAt: 20,
+      updatedAt: 20,
+    })
+    const nextCard = buildCard({
+      id: 'next-card',
+      deckId: deck.id,
+      frontText: 'harbor',
+      backText: 'a sheltered place for ships',
+      createdAt: 30,
+      updatedAt: 30,
+    })
+
+    await appDb.decks.add(deck)
+    await appDb.cards.bulkAdd([nextCard, dueCard])
+
+    renderStudySession()
+
+    expect(
+      await screen.findByRole('heading', { name: 'obscure' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Easy' }))
+
+    expect(await screen.findByRole('heading', { name: 'harbor' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Last rating result' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Easy moved obscure from Review to Review\./i),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('Review -> Review')).not.toHaveLength(0)
+    expect(screen.getByText('Step 2 -> Step 4')).toBeInTheDocument()
+    expect(screen.getByText(/Next due in 14 days\./i)).toBeInTheDocument()
+    expect(screen.getByText('Saved locally')).toBeInTheDocument()
+  })
+
+  it('keeps the saved rating outcome visible when the deck enters the waiting state', async () => {
+    const now = new Date(2026, 2, 8, 12, 0, 0, 0).getTime()
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+
+    const deck = buildDeck({ id: 'deck-1' })
+    const dueCard = buildCard({
+      id: 'due-card',
+      deckId: deck.id,
+      frontText: 'obscure',
+      backText: 'hidden or difficult to understand',
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 1_000,
+      lastReviewedAt: now - 5_000,
+      createdAt: 20,
+      updatedAt: 20,
+    })
+
+    await appDb.decks.add(deck)
+    await appDb.cards.add(dueCard)
+
+    renderStudySession()
+
+    expect(
+      await screen.findByRole('heading', { name: 'obscure' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Hard' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Study queue complete for now' }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Last rating result' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Hard moved obscure from Review to Learning\./i),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('Review -> Learning')).not.toHaveLength(0)
+    expect(screen.getByText('Step 2 unchanged')).toBeInTheDocument()
+    expect(screen.getByText(/Next due in 2 minutes\./i)).toBeInTheDocument()
   })
 })
