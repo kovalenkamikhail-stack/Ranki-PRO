@@ -97,6 +97,7 @@ Use explorer to inspect the current codebase, then use worker to implement only 
 After that, use reviewer to check correctness and missing tests.
 If the checks pass, use shipper to create a fresh codex/<slice-name> branch for that slice, or a suffixed variant if the base name already exists.
 Do not reuse an older codex/* branch unless the prompt explicitly says to continue it.
+If a codex/* branch has already been merged into main, never continue it for a follow-up fix; create a new branch even for a tiny correction.
 Stage only the files from that slice, make one commit, and push that branch.
 Use monitor or the parent agent to wait for GitHub automation to open or update the PR, watch checks, and confirm auto-merge into main.
 Do not start another slice until commit and push succeed.
@@ -139,6 +140,7 @@ Summarize concrete findings only.
 - Keep the full PRD as the source of truth and the brief as the fast reference.
 - Feature branches should follow the `codex/<slice-name>` pattern.
 - If that branch name already exists, create a fresh suffixed variant rather than reusing an old branch.
+- After merge, that exact codex/* branch should be considered closed; any follow-up fix gets a new branch.
 - GitHub automation creates or updates PRs for `codex/*` branches and should move approved work into `main`.
 - Let `shipper` finish at successful push; let `monitor` or the parent agent watch PR/check/merge completion and then return the local checkout to `main`.
 - If the product brief changes, update `docs/product/ranki-mvp-brief.md` before relying on it.

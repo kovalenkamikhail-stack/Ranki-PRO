@@ -7,6 +7,7 @@ Branch rules:
 - product or feature work must not be committed directly on main
 - if the current branch is main or detached HEAD, create a fresh feature branch before staging
 - never reuse an existing `codex/*` branch for a new slice unless the parent explicitly asks to continue that exact branch
+- once a `codex/*` branch has a merged PR into `main`, treat that branch as permanently closed; any follow-up fix, no matter how small, must go to a new fresh branch
 - if the preferred `codex/<slice-slug>` name already exists locally or on origin, create a fresh unique branch by appending a short suffix instead of reusing the old branch
 - before pushing, verify the branch diff against `origin/main` only contains files from the current slice; if unrelated files or stale branch carryover appear, stop and report instead of pushing
 - push the feature branch to origin and let GitHub automation create or update the PR into main
