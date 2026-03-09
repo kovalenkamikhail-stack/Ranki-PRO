@@ -22,7 +22,7 @@ import {
 import type { Card as CardRecord } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
 import {
-  hasQuickCaptureContent,
+  hasQuickCaptureCardDraftContent,
   parseQuickCaptureSearchParams,
 } from '@/lib/quick-capture'
 
@@ -174,7 +174,7 @@ export function EditCardPage({ mode }: EditCardPageProps) {
             hasCaptureQuery &&
             quickCapture &&
             quickCapture.errors.length === 0 &&
-            hasQuickCaptureContent(quickCapture.payload) &&
+            hasQuickCaptureCardDraftContent(quickCapture.payload) &&
             !appliedQuickCapturePrefillRef.current
           ) {
             setFrontText(quickCapture.payload.frontText)
@@ -503,15 +503,26 @@ export function EditCardPage({ mode }: EditCardPageProps) {
           </div>
         ) : null}
 
+        {mode === 'create' && hasCaptureQuery && quickCapture?.warnings.length ? (
+          <div className="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/[0.08] p-4 text-sm leading-6 text-foreground">
+            <p className="font-medium">Quick capture adjusted part of the payload.</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {quickCapture.warnings.map((captureWarning) => (
+                <li key={captureWarning}>{captureWarning}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         {mode === 'create' &&
         hasCaptureQuery &&
         quickCapture?.errors.length === 0 &&
-        hasQuickCaptureContent(quickCapture.payload) ? (
+        hasQuickCaptureCardDraftContent(quickCapture.payload) ? (
           <div className="rounded-[1.4rem] border border-primary/20 bg-primary/[0.06] p-4 text-sm leading-6 text-foreground">
             <p className="font-medium">Quick capture draft</p>
             <p className="mt-2 text-muted-foreground">
-              Front and back text were prefilled from the incoming capture URL.
-              Nothing saves automatically here.
+              Any usable front/back text was prefilled from the incoming capture
+              URL. Nothing saves automatically here.
             </p>
             {quickCapture.payload.contextText ? (
               <div className="mt-4 rounded-[1.2rem] border border-border/70 bg-background/80 p-4">

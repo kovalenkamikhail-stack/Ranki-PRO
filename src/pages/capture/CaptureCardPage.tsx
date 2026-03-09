@@ -348,6 +348,17 @@ export function CaptureCardPage() {
               </div>
             ) : null}
 
+            {capture.warnings.length > 0 ? (
+              <div className="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/[0.08] p-4 text-sm text-foreground">
+                <p className="font-medium">Ranki adjusted part of this capture.</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {capture.warnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             {hasRequestedUnknownDeck ? (
               <div className="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/[0.08] p-4 text-sm text-foreground">
                 The requested `deckId` is not stored on this device anymore.
