@@ -138,4 +138,14 @@ describe('ReadingLibraryPage', () => {
       '/reading/reading-1/edit',
     )
   })
+
+  it('keeps the book library reachable from the reading hub', async () => {
+    listReadingDocumentsMock.mockResolvedValue([])
+
+    renderReadingLibraryPage()
+
+    expect(
+      await screen.findByRole('link', { name: 'Open book library' }),
+    ).toHaveAttribute('href', '/reading/books')
+  })
 })

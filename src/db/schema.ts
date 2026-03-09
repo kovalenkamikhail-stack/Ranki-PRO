@@ -11,7 +11,13 @@ export const rankiSchemaV2 = {
   mediaBlobs: 'blobRef, createdAt',
 } as const
 
-export const rankiSchema = {
+export const rankiSchemaV3 = {
   ...rankiSchemaV2,
   readingDocuments: 'id, updatedAt, lastOpenedAt, createdAt',
+} as const
+
+export const rankiSchema = {
+  ...rankiSchemaV3,
+  books: 'id, updatedAt, lastOpenedAt, createdAt, title',
+  bookChapters: 'id, bookId, chapterIndex, [bookId+chapterIndex], createdAt',
 } as const

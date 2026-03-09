@@ -151,8 +151,23 @@ function ReadingLibraryIntro({
             </a>
           </Button>
           <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+            <Link to="/reading/books">
+              <BookOpenText className="mr-2 h-4 w-4" />
+              Open book library
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
             <Link to="/">Back to decks</Link>
           </Button>
+        </div>
+
+        <div className="rounded-[1.4rem] border border-primary/20 bg-primary/5 p-4">
+          <p className="font-medium text-foreground">Also available: local EPUB books</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Open the separate book library to import EPUB files and continue in
+            the dedicated book reader without affecting your saved reading
+            notes.
+          </p>
         </div>
 
         <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
