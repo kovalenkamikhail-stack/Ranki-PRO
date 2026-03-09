@@ -2,6 +2,7 @@ import {
   BookOpenText,
   BookPlus,
   Link2,
+  LoaderCircle,
   Send,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -45,6 +46,29 @@ function FieldPreview({
   )
 }
 
+function DeckSelectionSummary({
+  badgeLabel,
+  badgeVariant,
+  detail,
+  title,
+}: {
+  badgeLabel: string
+  badgeVariant: 'accent' | 'outline'
+  detail: string
+  title: string
+}) {
+  return (
+    <div className="rounded-[1.4rem] border border-border/70 bg-background/72 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-muted-foreground">Target deck</p>
+        <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+      </div>
+      <p className="mt-3 text-base font-semibold text-foreground">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{detail}</p>
+    </div>
+  )
+}
+
 export function CaptureCardPage() {
   const location = useLocation()
   const capture = useMemo(
@@ -52,7 +76,13 @@ export function CaptureCardPage() {
     [location.search],
   )
   const [decks, setDecks] = useState<Deck[]>([])
-  const [selectedDeckId, setSelectedDeckId] = useState('')
+  const [manualSelection, setManualSelection] = useState<{
+    deckId: string
+    scope: string
+  }>({
+    deckId: '',
+    scope: '',
+  })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -83,10 +113,14 @@ export function CaptureCardPage() {
     }
   }, [])
 
-  useEffect(() => {
+  const selectionScope = useMemo(
+    () =>
+      `${capture.payload.deckId ?? ''}::${decks.map((deck) => deck.id).join(',')}`,
+    [capture.payload.deckId, decks],
+  )
+  const defaultSelectedDeckId = useMemo(() => {
     if (decks.length === 0) {
-      setSelectedDeckId('')
-      return
+      return ''
     }
 
     const preferredDeckId = capture.payload.deckId
@@ -95,34 +129,120 @@ export function CaptureCardPage() {
       : null
 
     if (matchingDeck) {
-      setSelectedDeckId(matchingDeck.id)
-      return
+      return matchingDeck.id
     }
 
     if (decks.length === 1) {
-      setSelectedDeckId(decks[0].id)
-      return
+      return decks[0].id
     }
 
-    setSelectedDeckId('')
+    return ''
   }, [capture.payload.deckId, decks])
+  const selectedDeckId =
+    manualSelection.scope === selectionScope
+      ? manualSelection.deckId
+      : defaultSelectedDeckId
 
   const hasRequestedUnknownDeck =
     capture.payload.deckId !== null &&
     decks.length > 0 &&
     !decks.some((deck) => deck.id === capture.payload.deckId)
-
+  const selectedDeck = decks.find((deck) => deck.id === selectedDeckId) ?? null
   const continueHref = selectedDeckId
     ? `/decks/${selectedDeckId}/cards/new?${buildQuickCaptureSearchParams(
         capture.payload,
         { includeDeckId: false },
       ).toString()}`
     : null
+  const canContinue = Boolean(continueHref) && capture.errors.length === 0
+
+  const selectionSummary = (() => {
+    if (isLoading) {
+      return {
+        badgeLabel: 'Loading decks',
+        badgeVariant: 'outline' as const,
+        title: 'Checking local deck options',
+        detail:
+          'Ranki is reading the current deck list from IndexedDB before it confirms the handoff target.',
+      }
+    }
+
+    if (decks.length === 0 && capture.payload.deckId) {
+      return {
+        badgeLabel: 'Requested deck unavailable',
+        badgeVariant: 'outline' as const,
+        title: 'No local decks found yet',
+        detail:
+          'This capture asked for a deck, but no local decks are stored on this device yet. Create one first, then reopen the capture link.',
+      }
+    }
+
+    if (decks.length === 0) {
+      return {
+        badgeLabel: 'No decks yet',
+        badgeVariant: 'outline' as const,
+        title: 'Create a deck before continuing',
+        detail:
+          'Quick capture still hands off into the normal deck-scoped card editor, so the local deck needs to exist first.',
+      }
+    }
+
+    if (selectedDeck && capture.payload.deckId === selectedDeck.id) {
+      return {
+        badgeLabel: 'Requested deck found',
+        badgeVariant: 'accent' as const,
+        title: selectedDeck.name,
+        detail:
+          selectedDeck.description ??
+          'This deck came from the capture URL and is ready for confirmation.',
+      }
+    }
+
+    if (selectedDeck && capture.payload.deckId === null && decks.length === 1) {
+      return {
+        badgeLabel: 'Only local deck',
+        badgeVariant: 'accent' as const,
+        title: selectedDeck.name,
+        detail:
+          selectedDeck.description ??
+          'Ranki selected the only local deck available on this device.',
+      }
+    }
+
+    if (selectedDeck) {
+      return {
+        badgeLabel: 'Selected manually',
+        badgeVariant: 'accent' as const,
+        title: selectedDeck.name,
+        detail:
+          selectedDeck.description ??
+          'This local deck will receive the capture when you continue into the editor.',
+      }
+    }
+
+    if (hasRequestedUnknownDeck) {
+      return {
+        badgeLabel: 'Requested deck unavailable',
+        badgeVariant: 'outline' as const,
+        title: 'Choose another local deck',
+        detail:
+          'The capture asked for a deck that is not stored on this device anymore. Pick a local deck below to finish the handoff.',
+      }
+    }
+
+    return {
+      badgeLabel: 'Selection needed',
+      badgeVariant: 'outline' as const,
+      title: 'Choose the target deck',
+      detail:
+        'This capture did not arrive with a usable local deck preference, so choose the deck explicitly before continuing.',
+    }
+  })()
 
   return (
     <div className="space-y-6">
       <section className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
-        <Card className="overflow-hidden">
+        <Card className="order-2 overflow-hidden xl:order-1">
           <CardHeader className="gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="accent">Quick capture</Badge>
@@ -132,7 +252,7 @@ export function CaptureCardPage() {
 
             <div className="space-y-3">
               <CardTitle className="max-w-2xl text-3xl sm:text-4xl">
-                Send a small browser capture into Ranki’s normal card editor.
+                Send a small browser capture into Ranki&apos;s normal card editor.
               </CardTitle>
               <CardDescription className="max-w-2xl text-base">
                 This first pass accepts a small URL payload, shows the captured
@@ -158,7 +278,7 @@ export function CaptureCardPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Deck handoff
                 </p>
-                <p className="mt-2 text-xl font-semibold">Optional deckId</p>
+                <p className="mt-2 text-xl font-semibold">Requested deckId</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Used as a local preference, not an auto-save target.
                 </p>
@@ -196,12 +316,12 @@ export function CaptureCardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-1 xl:order-2">
           <CardHeader>
             <CardTitle>Continue into a deck</CardTitle>
             <CardDescription>
-              Choose the target deck explicitly, then open the normal card
-              editor with the captured text prefilled.
+              Confirm the target deck first, then open the normal card editor
+              with the captured text prefilled.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -230,14 +350,21 @@ export function CaptureCardPage() {
 
             {hasRequestedUnknownDeck ? (
               <div className="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/[0.08] p-4 text-sm text-foreground">
-                The requested `deckId` is not stored on this device. Choose
-                another local deck below.
+                The requested `deckId` is not stored on this device anymore.
+                Choose another local deck below.
               </div>
             ) : null}
 
+            <div role="status" aria-live="polite">
+              <DeckSelectionSummary {...selectionSummary} />
+            </div>
+
             {isLoading ? (
               <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-                Reading the latest local deck list from IndexedDB.
+                <div className="flex items-center gap-3">
+                  <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
+                  Reading the latest local deck list from IndexedDB.
+                </div>
               </div>
             ) : decks.length === 0 ? (
               <div className="rounded-[1.4rem] border border-dashed border-border bg-background/70 p-5 text-sm leading-6 text-muted-foreground">
@@ -245,13 +372,25 @@ export function CaptureCardPage() {
                 handoff into a saved card.
               </div>
             ) : (
-              <label className="block text-sm font-medium text-foreground">
-                Target deck
+              <div className="space-y-2">
+                <label
+                  htmlFor="capture-target-deck"
+                  className="block text-sm font-medium text-foreground"
+                >
+                  Target deck
+                </label>
                 <select
+                  id="capture-target-deck"
                   value={selectedDeckId}
-                  onChange={(event) => setSelectedDeckId(event.target.value)}
+                  onChange={(event) =>
+                    setManualSelection({
+                      deckId: event.target.value,
+                      scope: selectionScope,
+                    })
+                  }
                   className={inputClassName}
                   aria-label="Target deck"
+                  aria-describedby="capture-target-deck-hint"
                 >
                   <option value="">Choose a deck</option>
                   {decks.map((deck) => (
@@ -260,7 +399,15 @@ export function CaptureCardPage() {
                     </option>
                   ))}
                 </select>
-              </label>
+                <p
+                  id="capture-target-deck-hint"
+                  className="text-sm leading-6 text-muted-foreground"
+                >
+                  {selectedDeck
+                    ? 'You can keep this deck or switch to another local deck before opening the editor.'
+                    : 'Pick the local deck that should receive this capture when you continue.'}
+                </p>
+              </div>
             )}
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
@@ -269,12 +416,24 @@ export function CaptureCardPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {continueHref && capture.errors.length === 0 ? (
+              {canContinue && continueHref ? (
                 <Button asChild size="lg">
                   <Link to={continueHref}>
                     <Send className="mr-2 h-4 w-4" />
-                    Continue to editor
+                    {selectedDeck
+                      ? `Continue to ${selectedDeck.name}`
+                      : 'Continue to editor'}
                   </Link>
+                </Button>
+              ) : decks.length > 0 && capture.errors.length === 0 ? (
+                <Button type="button" size="lg" disabled>
+                  <Send className="mr-2 h-4 w-4" />
+                  Choose a deck to continue
+                </Button>
+              ) : capture.errors.length > 0 ? (
+                <Button type="button" size="lg" disabled>
+                  <Send className="mr-2 h-4 w-4" />
+                  Capture details need attention
                 </Button>
               ) : null}
 
@@ -313,7 +472,7 @@ export function CaptureCardPage() {
               <div>
                 <p className="font-medium text-foreground">Example</p>
                 <p className="mt-2 break-words font-mono text-xs">
-                  /capture/card?front=obscure&back=hidden+from+view&context=Seen+in+a+sentence.&deckId=your-deck-id
+                  /capture/card?front=obscure&amp;back=hidden+from+view&amp;context=Seen+in+a+sentence.&amp;deckId=your-deck-id
                 </p>
               </div>
             </div>

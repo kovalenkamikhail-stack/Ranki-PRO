@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CaptureCardPage } from '@/pages/capture/CaptureCardPage'
+import { fireEvent } from '@testing-library/react'
 
 const {
   bootstrapAppDbMock,
@@ -76,7 +77,7 @@ describe('CaptureCardPage', () => {
     ])
 
     renderCapturePage(
-      '/capture/card?front=obscure&back=hidden%20from%20view&context=Seen%20in%20a%20sentence.',
+      '/capture/card?front=obscure&back=hidden%20from%20view&context=Seen%20in%20a%20sentence.&deckId=deck-1',
     )
 
     expect(await screen.findByText('obscure')).toBeInTheDocument()
@@ -85,8 +86,9 @@ describe('CaptureCardPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Target deck')).toHaveValue('deck-1')
     })
+    expect(screen.getByText('Requested deck found')).toBeInTheDocument()
 
-    expect(screen.getByRole('link', { name: 'Continue to editor' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Continue to English' })).toHaveAttribute(
       'href',
       '/decks/deck-1/cards/new?front=obscure&back=hidden+from+view&context=Seen+in+a+sentence.',
     )
@@ -105,6 +107,100 @@ describe('CaptureCardPage', () => {
         'No supported capture fields were found. Use front, back, and optional context.',
       ),
     ).toBeInTheDocument()
+  })
+
+  it('keeps deck selection explicit when no deckId arrives and multiple local decks exist', async () => {
+    listDecksMock.mockResolvedValue([
+      {
+        id: 'deck-1',
+        name: 'English',
+        description: 'Core vocabulary',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 10,
+        updatedAt: 10,
+      },
+      {
+        id: 'deck-2',
+        name: 'Japanese',
+        description: 'Travel phrases',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 20,
+        updatedAt: 20,
+      },
+    ])
+
+    renderCapturePage('/capture/card?front=obscure&back=hidden')
+
+    expect(await screen.findByText('Selection needed')).toBeInTheDocument()
+    expect(screen.getByLabelText('Target deck')).toHaveValue('')
+    expect(
+      screen.getByRole('button', { name: 'Choose a deck to continue' }),
+    ).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Target deck'), {
+      target: { value: 'deck-2' },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Continue to Japanese' })).toHaveAttribute(
+        'href',
+        '/decks/deck-2/cards/new?front=obscure&back=hidden',
+      )
+    })
+  })
+
+  it('falls back cleanly when the requested deckId is invalid and still lets the user recover manually', async () => {
+    listDecksMock.mockResolvedValue([
+      {
+        id: 'deck-1',
+        name: 'English',
+        description: 'Core vocabulary',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 10,
+        updatedAt: 10,
+      },
+      {
+        id: 'deck-2',
+        name: 'Japanese',
+        description: 'Travel phrases',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 20,
+        updatedAt: 20,
+      },
+    ])
+
+    renderCapturePage('/capture/card?front=obscure&back=hidden&deckId=missing-deck')
+
+    expect(await screen.findByText('Requested deck unavailable')).toBeInTheDocument()
+    expect(
+      screen.getByText(/The requested `deckId` is not stored on this device anymore/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Choose a deck to continue' }),
+    ).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Target deck'), {
+      target: { value: 'deck-1' },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Continue to English' })).toHaveAttribute(
+        'href',
+        '/decks/deck-1/cards/new?front=obscure&back=hidden',
+      )
+    })
   })
 
   it('resyncs the selected deck when a new capture url arrives in the same tab', async () => {
@@ -149,7 +245,7 @@ describe('CaptureCardPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Target deck')).toHaveValue('deck-2')
     })
-    expect(screen.getByRole('link', { name: 'Continue to editor' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Continue to Japanese' })).toHaveAttribute(
       'href',
       '/decks/deck-2/cards/new?front=harbor&back=sheltered+place',
     )
