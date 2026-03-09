@@ -78,7 +78,7 @@ describe('StatisticsPage', () => {
 
     expect(screen.getByText('Loading statistics')).toBeInTheDocument()
     expect(
-      screen.queryByText('No study activity yet on this device.'),
+      screen.queryByText('No saved reviews yet on this device.'),
     ).not.toBeInTheDocument()
 
     resolveStatistics?.({
@@ -105,7 +105,7 @@ describe('StatisticsPage', () => {
     })
 
     expect(
-      await screen.findByText('No study activity yet on this device.'),
+      await screen.findByText('No saved reviews yet on this device.'),
     ).toBeInTheDocument()
   })
 
@@ -136,10 +136,10 @@ describe('StatisticsPage', () => {
     renderStatisticsPage()
 
     expect(
-      await screen.findByText('No study activity yet on this device.'),
+      await screen.findByText('No saved reviews yet on this device.'),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/Statistics appear after the first saved review/i),
+      screen.getByText(/Until then, Ranki keeps this page intentionally quiet/i),
     ).toBeInTheDocument()
   })
 
@@ -171,10 +171,10 @@ describe('StatisticsPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Statistics' })).toBeInTheDocument()
     expect(
-      screen.getByText(/No saved reviews landed in the last seven local days/i),
+      screen.getByText(/Quiet in the last 7 local days/i),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/No recent deck activity yet in this window/i),
+      screen.getByText(/No deck had saved review activity in this seven-day window/i),
     ).toBeInTheDocument()
   })
 
@@ -228,6 +228,8 @@ describe('StatisticsPage', () => {
     expect(screen.getByText('Spanish')).toBeInTheDocument()
     expect(screen.getByText('Again')).toBeInTheDocument()
     expect(screen.getByText('Good')).toBeInTheDocument()
-    expect(screen.getByText(/6 saved reviews in the recent window/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/6 saved reviews across 3 cards/i),
+    ).toBeInTheDocument()
   })
 })

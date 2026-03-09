@@ -5,6 +5,7 @@ import {
   Clock3,
   History,
   Layers3,
+  LoaderCircle,
   PieChart,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -47,6 +48,28 @@ function formatRatingLabel(rating: ReviewRating) {
   return rating.charAt(0).toUpperCase() + rating.slice(1)
 }
 
+function SectionHeading({
+  title,
+  description,
+  action,
+}: {
+  title: string
+  description: string
+  action?: ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
+      </div>
+      {action}
+    </div>
+  )
+}
+
 function MetricTile({
   label,
   value,
@@ -68,7 +91,9 @@ function MetricTile({
       <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
         {value}
       </p>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{detail}</p>
+      <p className="mt-2 min-h-12 text-sm leading-6 text-muted-foreground">
+        {detail}
+      </p>
     </div>
   )
 }
@@ -130,15 +155,128 @@ function RatingTile({
       <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
         {count}
       </p>
-      <div className="mt-4 h-2 rounded-full bg-background/70">
+      <div className="mt-4 h-2.5 rounded-full bg-background/70">
         <div
-          className={`h-2 rounded-full transition-[width] ${styles.barClassName}`}
+          className={`h-2.5 rounded-full transition-[width] ${styles.barClassName}`}
           style={{ width: `${percentage}%` }}
         />
       </div>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
         Saved {formatRatingLabel(rating)} ratings in the last 7 local days.
       </p>
+    </div>
+  )
+}
+
+function WindowRule({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex-none text-primary">{icon}</div>
+        <div>
+          <p className="font-medium">{title}</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RecentWindowQuietState() {
+  return (
+    <div className="rounded-[1.6rem] border border-dashed border-border/70 bg-background/72 p-5">
+      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+        Recent Window
+      </p>
+      <h3 className="mt-3 text-xl font-semibold tracking-tight text-foreground">
+        Quiet in the last 7 local days.
+      </h3>
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+        Older review history still exists on this device, but nothing landed in
+        the current seven-day window. Ranki keeps that lull visible instead of
+        smoothing it over with placeholder activity.
+      </p>
+    </div>
+  )
+}
+
+function MostActiveDeckCard({
+  deck,
+  rank,
+}: {
+  deck: StudyActivityStatistics['mostActiveDecksLast7Days'][number]
+  rank: number
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={`${deck.deckName}: ${deck.reviewCount} reviews`}
+      className="rounded-[1.5rem] border border-border/70 bg-background/72 p-4 shadow-[0_10px_32px_rgba(18,35,33,0.05)]"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-primary/12 px-2 text-sm font-semibold text-primary">
+              #{rank}
+            </div>
+            <Badge variant="outline">{deck.reviewCount} reviews</Badge>
+            <Badge variant="outline">{deck.cardsStudiedCount} cards</Badge>
+          </div>
+          <p className="text-lg font-semibold tracking-tight text-foreground">
+            {deck.deckName}
+          </p>
+        </div>
+
+        <Button asChild variant="ghost" size="sm" className="w-full sm:w-auto">
+          <Link to={`/decks/${deck.deckId}`}>
+            Open deck
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-[1.2rem] border border-border/70 bg-background/85 p-3">
+          <div className="flex items-start gap-2">
+            <Layers3 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Review volume
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {deck.reviewCount} saved review
+                {deck.reviewCount === 1 ? '' : 's'} across{' '}
+                {deck.cardsStudiedCount} card
+                {deck.cardsStudiedCount === 1 ? '' : 's'}.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[1.2rem] border border-border/70 bg-background/85 p-3">
+          <div className="flex items-start gap-2">
+            <Clock3 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Last activity
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {formatTimestamp(deck.lastReviewedAt)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -152,13 +290,33 @@ function EmptyStatisticsState() {
             <BarChart3 className="h-6 w-6" />
           </div>
           <h2 className="text-2xl font-semibold tracking-tight">
-            No study activity yet on this device.
+            No saved reviews yet on this device.
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-            Statistics appear after the first saved review. Ranki only reports
-            on-device study activity from persisted review logs, so there are no
-            placeholder numbers here.
+            Statistics appear after the first saved review. Until then, Ranki
+            keeps this page intentionally quiet and avoids placeholder streaks,
+            charts, or made-up baseline numbers.
           </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[1.2rem] border border-border/70 bg-background/80 p-4">
+              <p className="text-sm font-medium text-foreground">Honest by default</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                No review logs means no activity tiles yet.
+              </p>
+            </div>
+            <div className="rounded-[1.2rem] border border-border/70 bg-background/80 p-4">
+              <p className="text-sm font-medium text-foreground">Local-only</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Nothing here depends on a server or synced account.
+              </p>
+            </div>
+            <div className="rounded-[1.2rem] border border-border/70 bg-background/80 p-4">
+              <p className="text-sm font-medium text-foreground">Starts with review</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                The first saved rating will populate this page.
+              </p>
+            </div>
+          </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild>
               <Link to="/">
@@ -167,8 +325,8 @@ function EmptyStatisticsState() {
               </Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/reading">
-                Explore reading tools
+              <Link to="/settings">
+                Open settings
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -223,7 +381,7 @@ export function StatisticsPage() {
     <div className="space-y-6">
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card className="overflow-hidden">
-          <CardHeader className="gap-4">
+          <CardHeader className="gap-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="accent">Statistics</Badge>
               <Badge variant="outline">Saved review logs only</Badge>
@@ -235,8 +393,8 @@ export function StatisticsPage() {
                 Statistics
               </CardTitle>
               <CardDescription className="max-w-2xl text-base">
-                See recent study activity derived from persisted review logs on
-                this device. These numbers describe activity and deck effort,
+                See recent study activity from persisted review logs on this
+                device. The page stays descriptive about effort and frequency,
                 not mastery or retention claims.
               </CardDescription>
             </div>
@@ -280,58 +438,37 @@ export function StatisticsPage() {
             </div>
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
-              Every number on this screen comes from saved `reviewLogs`. Nothing
-              is sent to a server, and the page deliberately avoids stronger
-              interpretations than the stored data supports.
+              Every number on this screen comes from saved `reviewLogs`.
+              Nothing is sent to a server, and the page intentionally keeps its
+              claims narrower than the stored data itself.
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="h-fit">
           <CardHeader>
             <CardTitle>Window rules</CardTitle>
             <CardDescription>
-              Keep the definitions explicit so the numbers stay trustworthy.
+              Keep the definitions explicit so the metrics stay trustworthy when
+              activity is high, low, or quiet.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <div className="flex items-start gap-3">
-                <Clock3 className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                <div>
-                  <p className="font-medium">Today</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Counts review logs with `reviewedAt` between local midnight
-                    and the next local midnight.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <div className="flex items-start gap-3">
-                <History className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                <div>
-                  <p className="font-medium">Last 7 days</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Uses the last seven local calendar days, including today.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <div className="flex items-start gap-3">
-                <PieChart className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                <div>
-                  <p className="font-medium">Rating mix</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Shows activity by saved rating action, not any inferred
-                    learning outcome.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <CardContent className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+            <WindowRule
+              icon={<Clock3 className="h-4 w-4" />}
+              title="Today"
+              description="Counts review logs with `reviewedAt` between local midnight and the next local midnight."
+            />
+            <WindowRule
+              icon={<History className="h-4 w-4" />}
+              title="Last 7 days"
+              description="Uses the last seven local calendar days, including today."
+            />
+            <WindowRule
+              icon={<PieChart className="h-4 w-4" />}
+              title="Rating mix"
+              description="Shows activity by saved rating action, not any inferred learning outcome."
+            />
           </CardContent>
         </Card>
       </section>
@@ -353,20 +490,22 @@ export function StatisticsPage() {
               Reading saved review logs from IndexedDB.
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
+              Gathering the latest local activity snapshot.
+            </div>
+          </CardContent>
         </Card>
       ) : statistics && !statistics.hasAnyReviewHistory ? (
         <EmptyStatisticsState />
       ) : statistics ? (
         <>
           <section className="space-y-4">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight">
-                Recent activity
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                A simple snapshot of what you actually studied on this device.
-              </p>
-            </div>
+            <SectionHeading
+              title="Recent activity"
+              description="A clear snapshot of what you actually studied on this device, with the quiet periods left visible instead of hidden."
+            />
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <MetricTile
@@ -392,6 +531,8 @@ export function StatisticsPage() {
             </div>
           </section>
 
+          {!statistics.hasRecentActivity ? <RecentWindowQuietState /> : null}
+
           <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
             <Card>
               <CardHeader>
@@ -403,8 +544,8 @@ export function StatisticsPage() {
               <CardContent className="space-y-4">
                 {!statistics.hasRecentActivity ? (
                   <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-background/72 p-5 text-sm leading-6 text-muted-foreground">
-                    No saved reviews landed in the last seven local days. Older
-                    review history still exists on this device.
+                    No saved reviews landed in this seven-day window yet. Older
+                    history still exists on this device.
                   </div>
                 ) : null}
 
@@ -443,71 +584,20 @@ export function StatisticsPage() {
               <CardContent className="space-y-4">
                 {!statistics.hasRecentActivity ? (
                   <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-background/72 p-5 text-sm leading-6 text-muted-foreground">
-                    No recent deck activity yet in this window. The next saved
-                    review will repopulate this list automatically.
+                    No deck had saved review activity in this seven-day window.
+                    The next saved review will repopulate this list
+                    automatically.
                   </div>
                 ) : (
-                  statistics.mostActiveDecksLast7Days.slice(0, 5).map((deck) => (
-                    <div
-                      key={deck.deckId}
-                      role="group"
-                      aria-label={`${deck.deckName}: ${deck.reviewCount} reviews`}
-                      className="rounded-[1.4rem] border border-border/70 bg-background/72 p-4 shadow-[0_10px_32px_rgba(18,35,33,0.05)]"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="outline">{deck.reviewCount} reviews</Badge>
-                            <Badge variant="outline">
-                              {deck.cardsStudiedCount} cards
-                            </Badge>
-                          </div>
-                          <p className="text-lg font-semibold tracking-tight text-foreground">
-                            {deck.deckName}
-                          </p>
-                        </div>
-
-                        <Button asChild variant="ghost" size="sm">
-                          <Link to={`/decks/${deck.deckId}`}>
-                            Open deck
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </div>
-
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-[1.2rem] border border-border/70 bg-background/85 p-3">
-                          <div className="flex items-start gap-2">
-                            <Layers3 className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                            <div>
-                              <p className="text-sm font-medium text-foreground">
-                                Review volume
-                              </p>
-                              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                {deck.reviewCount} saved review
-                                {deck.reviewCount === 1 ? '' : 's'} in the
-                                recent window.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="rounded-[1.2rem] border border-border/70 bg-background/85 p-3">
-                          <div className="flex items-start gap-2">
-                            <Clock3 className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                            <div>
-                              <p className="text-sm font-medium text-foreground">
-                                Last activity
-                              </p>
-                              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                {formatTimestamp(deck.lastReviewedAt)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                  statistics.mostActiveDecksLast7Days
+                    .slice(0, 5)
+                    .map((deck, index) => (
+                      <MostActiveDeckCard
+                        key={deck.deckId}
+                        deck={deck}
+                        rank={index + 1}
+                      />
+                    ))
                 )}
               </CardContent>
             </Card>
