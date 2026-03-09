@@ -1,4 +1,12 @@
-import { Save, ShieldCheck, SlidersHorizontal, Upload } from 'lucide-react'
+import {
+  Download,
+  HardDrive,
+  Save,
+  SlidersHorizontal,
+  Smartphone,
+  Upload,
+  WifiOff,
+} from 'lucide-react'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -150,6 +158,15 @@ export function SettingsPage() {
     }
   }
 
+  const storageDurabilityLabel =
+    storageStatus === 'granted'
+      ? 'Persistent'
+      : storageStatus === 'best-effort'
+        ? 'Best-effort'
+        : storageStatus === 'unsupported'
+          ? 'Unsupported'
+          : 'Checking...'
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <Card>
@@ -290,6 +307,87 @@ export function SettingsPage() {
         <Card>
           <CardHeader>
             <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
+              <Download className="h-6 w-6" />
+            </div>
+            <CardTitle>Install and offline use</CardTitle>
+            <CardDescription>
+              Practical PWA guidance for desktop browsers and iPhone, plus an
+              honest reminder of what stays local.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <div className="flex items-start gap-3">
+                <Download className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">Desktop install</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    If your browser shows an install-app icon in the address bar
+                    or menu, use it to install Ranki. The installed app opens in
+                    its own window and keeps the same local data as the browser
+                    profile that installed it.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <div className="flex items-start gap-3">
+                <Smartphone className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">iPhone install</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Open Ranki in Safari, tap <span className="font-medium">Share</span>, then choose{' '}
+                    <span className="font-medium">Add to Home Screen</span>. iPhone
+                    install behavior is browser-limited, so Safari is the
+                    reliable path for this first pass.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <div className="flex items-start gap-3">
+                <WifiOff className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">Offline expectations</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    After the app has loaded and the PWA shell is cached, reopening
+                    Ranki offline should still show your saved local decks,
+                    cards, and review progress. Actual offline behavior can vary
+                    a bit by browser, especially on iPhone.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <div className="flex items-start gap-3">
+                <HardDrive className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">What stays local</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Decks, cards, media, review logs, and settings are saved on
+                    this device only. Ranki still has no account system or sync,
+                    so another phone or computer will not automatically see the
+                    same data.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
+              Storage durability is currently <span className="font-medium text-foreground">{storageDurabilityLabel}</span>.
+              If the browser clears site data, or the device/browser storage is
+              reset, local Ranki data can be lost because this MVP does not have
+              backup or sync yet.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
               <Upload className="h-6 w-6" />
             </div>
             <CardTitle>Import Anki package</CardTitle>
@@ -383,36 +481,6 @@ export function SettingsPage() {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="mb-3 inline-flex rounded-2xl bg-secondary p-3 text-secondary-foreground">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <CardTitle>Still local-only</CardTitle>
-            <CardDescription>
-              This keeps the MVP honest while still letting us pressure-test the
-              real product shape with bigger datasets.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
-            <p>
-              The app remains device-local and offline-first. Import happens on
-              this device only, inside the same Dexie stores that power normal
-              deck and card CRUD.
-            </p>
-            <p>
-              Stable IDs, timestamps, deck rows, card rows, media blobs, review
-              logs, and settings stay separated so future sync work is still a
-              deliberate next step instead of an accidental side effect.
-            </p>
-            <p>
-              The point of this slice is practical: load real card volume,
-              stress the deck list and study flow, and let that evidence tell us
-              what needs the next polish pass.
-            </p>
           </CardContent>
         </Card>
       </div>
