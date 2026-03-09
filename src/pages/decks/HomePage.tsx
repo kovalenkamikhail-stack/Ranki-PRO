@@ -18,6 +18,11 @@ import {
 } from '@/components/ui/card'
 import { bootstrapAppDb } from '@/db/bootstrap'
 import { deleteDeckCascade, listDecks } from '@/db/decks'
+import {
+  loadStudyActivityStatistics,
+  type ActiveDeckStudyActivity,
+  type StudyActivityStatistics,
+} from '@/db/statistics'
 import { loadDeckStudySession } from '@/db/study-session'
 import type { Deck } from '@/entities/deck'
 import { getDeckStudySummary, type DeckStudySummary } from '@/pages/decks/study-summary'
@@ -31,11 +36,67 @@ function formatUpdatedAt(timestamp: number) {
   }).format(timestamp)
 }
 
+function getDeckActivityById(statistics: StudyActivityStatistics | null) {
+  return new Map(
+    (statistics?.mostActiveDecksLast7Days ?? []).map((deckActivity) => [
+      deckActivity.deckId,
+      deckActivity,
+    ]),
+  )
+}
+
+function getHomeStudyPulseDetail(statistics: StudyActivityStatistics | null) {
+  if (!statistics || !statistics.hasAnyReviewHistory) {
+    return 'No saved reviews yet. Home stays deck-first until the first study session lands on this device.'
+  }
+
+  const mostActiveDeck = statistics.mostActiveDecksLast7Days[0]
+
+  if (!mostActiveDeck) {
+    return 'Review history exists on this device, but nothing landed in the recent seven-day window.'
+  }
+
+  return `${mostActiveDeck.deckName} is the most active deck this week with ${mostActiveDeck.reviewCount} saved reviews across ${mostActiveDeck.cardsStudiedCount} cards.`
+}
+
+function getDeckRecentActivitySummary({
+  deckActivity,
+  statistics,
+}: {
+  deckActivity: ActiveDeckStudyActivity | undefined
+  statistics: StudyActivityStatistics | null
+}) {
+  if (!statistics || !statistics.hasAnyReviewHistory) {
+    return {
+      badgeLabel: 'No saved reviews yet',
+      badgeVariant: 'outline' as const,
+      detail:
+        'This deck still has no saved review history on this device.',
+    }
+  }
+
+  if (!deckActivity) {
+    return {
+      badgeLabel: 'Quiet this week',
+      badgeVariant: 'outline' as const,
+      detail:
+        'No saved review activity for this deck in the last 7 local days.',
+    }
+  }
+
+  return {
+    badgeLabel: 'Active this week',
+    badgeVariant: 'accent' as const,
+    detail: `${deckActivity.reviewCount} saved reviews across ${deckActivity.cardsStudiedCount} cards in the last 7 local days. Last studied ${formatUpdatedAt(deckActivity.lastReviewedAt)}.`,
+  }
+}
+
 export function HomePage() {
   const [decks, setDecks] = useState<Deck[]>([])
   const [studySummaryByDeckId, setStudySummaryByDeckId] = useState<
     Record<string, DeckStudySummary>
   >({})
+  const [statistics, setStatistics] = useState<StudyActivityStatistics | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null)
@@ -44,8 +105,8 @@ export function HomePage() {
     let isMounted = true
 
     void bootstrapAppDb()
-      .then(() => listDecks())
-      .then(async (nextDecks) => {
+      .then(() => Promise.all([listDecks(), loadStudyActivityStatistics()]))
+      .then(async ([nextDecks, nextStatistics]) => {
         const studySummaryEntries = await Promise.all(
           nextDecks.map(async (deck) => {
             const session = await loadDeckStudySession(deck.id)
@@ -57,6 +118,7 @@ export function HomePage() {
         if (isMounted) {
           setDecks(nextDecks)
           setStudySummaryByDeckId(Object.fromEntries(studySummaryEntries))
+          setStatistics(nextStatistics)
           setIsLoading(false)
         }
       })
@@ -73,6 +135,8 @@ export function HomePage() {
       isMounted = false
     }
   }, [])
+
+  const deckActivityById = getDeckActivityById(statistics)
 
   const handleDeleteDeck = async (deck: Deck) => {
     const confirmed = window.confirm(
@@ -179,34 +243,50 @@ export function HomePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Local-only guardrails</CardTitle>
+            <CardTitle>Study pulse</CardTitle>
             <CardDescription>
-              The MVP still keeps data and workflows on one device.
+              Compact recent-study signals from saved local review logs.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="font-medium">No sync or accounts</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Reviews today
+              </p>
+              <p className="mt-2 text-3xl font-semibold">
+                {isLoading ? '...' : (statistics?.reviewsCompletedToday ?? 0)}
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Deck changes persist to IndexedDB and stay scoped to the current
-                browser install.
+                Saved rating actions completed since local midnight.
               </p>
             </div>
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="font-medium">Delete stays explicit</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Reviews in last 7 days
+              </p>
+              <p className="mt-2 text-3xl font-semibold">
+                {isLoading ? '...' : (statistics?.reviewsCompletedLast7Days ?? 0)}
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Deck removal asks for confirmation before deleting the local
-                record and its future deck-scoped data.
+                Saved review events in the recent local window.
               </p>
             </div>
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="font-medium">Later slices stay separate</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Review queues, scheduler logic, and analytics remain out of
-                scope here.
+              <p className="text-sm font-medium text-muted-foreground">
+                Active decks in last 7 days
               </p>
+              <p className="mt-2 text-3xl font-semibold">
+                {isLoading ? '...' : (statistics?.activeDeckCountLast7Days ?? 0)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Decks with at least one saved review in the recent window.
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
+              {getHomeStudyPulseDetail(statistics)}
             </div>
           </CardContent>
         </Card>
@@ -300,11 +380,29 @@ export function HomePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-                      Stored locally with deck settings defaults ready. Open the
-                      deck to inspect its workspace shell, local card list, and
-                      deck-scoped study counts.
-                    </div>
+                    {(() => {
+                      const deckActivity = deckActivityById.get(deck.id)
+                      const recentActivitySummary = getDeckRecentActivitySummary({
+                        deckActivity,
+                        statistics,
+                      })
+
+                      return (
+                        <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Recent study
+                            </p>
+                            <Badge variant={recentActivitySummary.badgeVariant}>
+                              {recentActivitySummary.badgeLabel}
+                            </Badge>
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                            {recentActivitySummary.detail}
+                          </p>
+                        </div>
+                      )
+                    })()}
 
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                       <Badge variant="outline">Due {studySummary.dueCount}</Badge>

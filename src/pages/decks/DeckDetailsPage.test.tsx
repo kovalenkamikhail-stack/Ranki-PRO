@@ -91,6 +91,7 @@ describe('DeckDetailsPage', () => {
       'href',
       '/decks/deck-1/study',
     )
+    expect(screen.getByText('No saved reviews yet')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add first card' })).toHaveAttribute(
       'href',
       '/decks/deck-1/cards/new',
@@ -225,6 +226,77 @@ describe('DeckDetailsPage', () => {
     expect(within(newTileLabel.closest('div')!).getByText('1')).toBeInTheDocument()
     expect(screen.getByText('Ready now')).toBeInTheDocument()
     expect(screen.getByText('2 cards are available to study.')).toBeInTheDocument()
+  })
+
+  it('surfaces recent deck study context from saved review history', async () => {
+    const now = Date.UTC(2026, 2, 9, 10, 0, 0)
+    const deck = buildDeck({ id: 'deck-1' })
+    const dueCard = buildCard({
+      id: 'due-card',
+      deckId: deck.id,
+      state: 'review',
+      ladderStepIndex: 1,
+      dueAt: now - 1_000,
+      lastReviewedAt: now - 10_000,
+      frontText: 'due card',
+      createdAt: 10,
+      updatedAt: 10,
+    })
+    const otherDeck = buildDeck({ id: 'deck-2', name: 'Spanish' })
+
+    await appDb.decks.bulkAdd([deck, otherDeck])
+    await appDb.cards.add(dueCard)
+    await appDb.reviewLogs.bulkAdd([
+      {
+        id: 'review-1',
+        cardId: dueCard.id,
+        deckId: deck.id,
+        rating: 'good',
+        previousState: 'review',
+        newState: 'review',
+        previousLadderStepIndex: 1,
+        newLadderStepIndex: 2,
+        reviewedAt: now - 60_000,
+        previousDueAt: now - 120_000,
+        newDueAt: now + 60_000,
+      },
+      {
+        id: 'review-2',
+        cardId: `${dueCard.id}-2`,
+        deckId: deck.id,
+        rating: 'again',
+        previousState: 'review',
+        newState: 'learning',
+        previousLadderStepIndex: 2,
+        newLadderStepIndex: 0,
+        reviewedAt: now - 26 * 60 * 60 * 1000,
+        previousDueAt: now - 27 * 60 * 60 * 1000,
+        newDueAt: now - 25 * 60 * 60 * 1000,
+      },
+      {
+        id: 'review-3',
+        cardId: 'other-card',
+        deckId: otherDeck.id,
+        rating: 'hard',
+        previousState: 'review',
+        newState: 'review',
+        previousLadderStepIndex: 2,
+        newLadderStepIndex: 2,
+        reviewedAt: now - 60_000,
+        previousDueAt: now - 120_000,
+        newDueAt: now + 60_000,
+      },
+    ])
+
+    renderDeckDetails()
+
+    expect(await screen.findByText('Deck context')).toBeInTheDocument()
+    expect(screen.getByText('Active this week')).toBeInTheDocument()
+    expect(
+      screen.getByText(/2 saved reviews across 2 cards in the last 7 local days/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Reviews today')).toBeInTheDocument()
+    expect(screen.getByText('2 reviews / 2 cards')).toBeInTheDocument()
   })
 
   it('respects deck-level limits when showing deck study counters', async () => {

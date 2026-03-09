@@ -1,3 +1,4 @@
+import Dexie from 'dexie'
 import { appDb, type RankiDb } from '@/db/app-db'
 import type { Deck } from '@/entities/deck'
 import type { ReviewLog } from '@/entities/review-log'
@@ -36,6 +37,22 @@ export interface StudyActivityStatistics {
   activeDeckCountLast7Days: number
   ratingDistributionLast7Days: RatingDistribution
   mostActiveDecksLast7Days: ActiveDeckStudyActivity[]
+}
+
+export interface DeckStudyActivitySummary {
+  deckId: string
+  generatedAt: number
+  todayStart: number
+  nextDayStart: number
+  recentWindowStart: number
+  recentWindowDays: number
+  totalReviewHistoryCount: number
+  hasAnyReviewHistory: boolean
+  hasRecentActivity: boolean
+  reviewsCompletedToday: number
+  reviewsCompletedLast7Days: number
+  cardsStudiedLast7Days: number
+  lastReviewedAt: number | null
 }
 
 function getRecentWindowStartMs(
@@ -170,5 +187,48 @@ export async function loadStudyActivityStatistics(
       recentReviewLogs,
       buildDeckNameById(recentDecks),
     ),
+  }
+}
+
+export async function loadDeckStudyActivitySummary(
+  deckId: string,
+  now: number = nowMs(),
+  database: RankiDb = appDb,
+): Promise<DeckStudyActivitySummary> {
+  const todayStart = startOfLocalDayMs(now)
+  const nextDayStart = startOfNextLocalDayMs(now)
+  const recentWindowStart = getRecentWindowStartMs(now)
+
+  const [totalReviewHistoryCount, recentReviewLogs, latestReviewLog] =
+    await Promise.all([
+      database.reviewLogs.where('deckId').equals(deckId).count(),
+      database.reviewLogs
+        .where('[deckId+reviewedAt]')
+        .between([deckId, recentWindowStart], [deckId, nextDayStart], true, false)
+        .toArray(),
+      database.reviewLogs
+        .where('[deckId+reviewedAt]')
+        .between([deckId, Dexie.minKey], [deckId, Dexie.maxKey])
+        .last(),
+    ])
+
+  const todayReviewLogs = recentReviewLogs.filter(
+    (reviewLog) => reviewLog.reviewedAt >= todayStart,
+  )
+
+  return {
+    deckId,
+    generatedAt: now,
+    todayStart,
+    nextDayStart,
+    recentWindowStart,
+    recentWindowDays: STUDY_ACTIVITY_RECENT_WINDOW_DAYS,
+    totalReviewHistoryCount,
+    hasAnyReviewHistory: totalReviewHistoryCount > 0,
+    hasRecentActivity: recentReviewLogs.length > 0,
+    reviewsCompletedToday: todayReviewLogs.length,
+    reviewsCompletedLast7Days: recentReviewLogs.length,
+    cardsStudiedLast7Days: countDistinctCards(recentReviewLogs),
+    lastReviewedAt: latestReviewLog?.reviewedAt ?? null,
   }
 }
