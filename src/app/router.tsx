@@ -6,6 +6,8 @@ import { CaptureCardPage } from '@/pages/capture/CaptureCardPage'
 import { DeckDetailsPage } from '@/pages/decks/DeckDetailsPage'
 import { EditDeckPage } from '@/pages/decks/EditDeckPage'
 import { HomePage } from '@/pages/decks/HomePage'
+import { BookLibraryPage } from '@/pages/reading/BookLibraryPage'
+import { BookReaderPage } from '@/pages/reading/BookReaderPage'
 import { EditReadingDocumentPage } from '@/pages/reading/EditReadingDocumentPage'
 import { ReadingDocumentPage } from '@/pages/reading/ReadingDocumentPage'
 import { ReadingLibraryPage } from '@/pages/reading/ReadingLibraryPage'
@@ -59,6 +61,14 @@ export const router = createBrowserRouter([
       {
         path: 'reading',
         element: <ReadingLibraryPage />,
+      },
+      {
+        path: 'reading/books',
+        element: <BookLibraryPage />,
+      },
+      {
+        path: 'reading/books/:bookId',
+        element: <BookReaderPage />,
       },
       {
         path: 'reading/:documentId',

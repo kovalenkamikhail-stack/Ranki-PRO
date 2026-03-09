@@ -37,12 +37,11 @@ export function AppHeader() {
 
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Calm study, reading, and local insight that stay with you offline.
+                Calm study, local reading, and personal insight that stay with you offline.
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Decks, text-first cards, local reading documents, and study
-                activity now persist on this device without sync or cloud
-                dependencies.
+                Decks, reading notes, imported books, and study activity now
+                persist on this device without sync or cloud dependencies.
               </p>
             </div>
           </div>
