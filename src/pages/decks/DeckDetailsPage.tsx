@@ -24,6 +24,10 @@ import { bootstrapAppDb } from '@/db/bootstrap'
 import { deleteCardCascade, listCardsForDeck } from '@/db/cards'
 import { getDeck } from '@/db/decks'
 import { listCardBackImages, type CardBackImage as StoredCardBackImage } from '@/db/media-assets'
+import {
+  loadDeckStudyActivitySummary,
+  type DeckStudyActivitySummary,
+} from '@/db/statistics'
 import { loadDeckStudySession } from '@/db/study-session'
 import type { Card as DeckCard, CardState } from '@/entities/card'
 import type { Deck } from '@/entities/deck'
@@ -39,6 +43,21 @@ function formatTimestamp(timestamp: number) {
 }
 
 const EMPTY_STUDY_SUMMARY = getDeckStudySummary(null)
+const EMPTY_ACTIVITY_SUMMARY: DeckStudyActivitySummary = {
+  deckId: '',
+  generatedAt: 0,
+  todayStart: 0,
+  nextDayStart: 0,
+  recentWindowStart: 0,
+  recentWindowDays: 7,
+  totalReviewHistoryCount: 0,
+  hasAnyReviewHistory: false,
+  hasRecentActivity: false,
+  reviewsCompletedToday: 0,
+  reviewsCompletedLast7Days: 0,
+  cardsStudiedLast7Days: 0,
+  lastReviewedAt: null,
+}
 
 function formatCardState(state: CardState) {
   if (state === 'learning') {
@@ -86,6 +105,32 @@ function getCardBackImageAlt(card: DeckCard) {
   return `Back image for ${card.frontText}`
 }
 
+function getDeckActivityStatus(summary: DeckStudyActivitySummary) {
+  if (!summary.hasAnyReviewHistory) {
+    return {
+      label: 'No saved reviews yet',
+      variant: 'outline' as const,
+      detail:
+        'This deck still has no saved review history on this device.',
+    }
+  }
+
+  if (!summary.hasRecentActivity) {
+    return {
+      label: 'Quiet this week',
+      variant: 'outline' as const,
+      detail:
+        'No saved reviews landed for this deck in the last 7 local days.',
+    }
+  }
+
+  return {
+    label: 'Active this week',
+    variant: 'accent' as const,
+    detail: `${summary.reviewsCompletedLast7Days} saved review${summary.reviewsCompletedLast7Days === 1 ? '' : 's'} across ${summary.cardsStudiedLast7Days} card${summary.cardsStudiedLast7Days === 1 ? '' : 's'} in the last 7 local days.`,
+  }
+}
+
 function MissingDeckIdState() {
   return (
     <Card className="mx-auto max-w-4xl">
@@ -125,6 +170,9 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
   const [studySummary, setStudySummary] = useState<DeckStudySummary>(
     EMPTY_STUDY_SUMMARY,
   )
+  const [activitySummary, setActivitySummary] = useState<DeckStudyActivitySummary>(
+    EMPTY_ACTIVITY_SUMMARY,
+  )
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -140,9 +188,10 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
           getDeck(deckId),
           listCardsForDeck(deckId),
           loadDeckStudySession(deckId),
+          loadDeckStudyActivitySummary(deckId),
         ]),
       )
-      .then(async ([nextDeck, nextCards, nextSession]) => {
+      .then(async ([nextDeck, nextCards, nextSession, nextActivitySummary]) => {
         if (!isMounted) {
           return
         }
@@ -162,6 +211,7 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
         setCards(nextCards)
         setCardBackImages(nextCardBackImages)
         setStudySummary(getDeckStudySummary(nextSession))
+        setActivitySummary(nextActivitySummary)
       })
       .catch((nextError: unknown) => {
         if (isMounted) {
@@ -208,12 +258,14 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
 
       const refreshedDeck = await getDeck(deckId)
       const refreshedSession = await loadDeckStudySession(deckId)
+      const refreshedActivitySummary = await loadDeckStudyActivitySummary(deckId)
 
       if (refreshedDeck) {
         setDeck(refreshedDeck)
       }
 
       setStudySummary(getDeckStudySummary(refreshedSession))
+      setActivitySummary(refreshedActivitySummary)
     } catch (nextError: unknown) {
       setActionError(
         nextError instanceof Error ? nextError.message : 'Failed to delete card.',
@@ -303,6 +355,8 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
       </Card>
     )
   }
+
+  const activityStatus = getDeckActivityStatus(activitySummary)
 
   return (
     <div className="space-y-6">
@@ -403,20 +457,53 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="h-fit">
           <CardHeader>
-            <CardTitle>Deck metadata</CardTitle>
+            <CardTitle>Deck context</CardTitle>
             <CardDescription>
-              Read-only facts for the selected local deck.
+              Recent study context and a few stable deck facts.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
               <p className="text-sm font-medium text-muted-foreground">
-                Created
+                Activity
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge variant={activityStatus.variant}>{activityStatus.label}</Badge>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                {activityStatus.detail}
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                Last studied
               </p>
               <p className="mt-2 text-base font-semibold">
-                {formatTimestamp(deck.createdAt)}
+                {activitySummary.lastReviewedAt === null
+                  ? 'Not studied yet'
+                  : formatTimestamp(activitySummary.lastReviewedAt)}
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                Reviews today
+              </p>
+              <p className="mt-2 text-base font-semibold">
+                {activitySummary.reviewsCompletedToday}
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                Last 7 days
+              </p>
+              <p className="mt-2 text-base font-semibold">
+                {activitySummary.reviewsCompletedLast7Days} reviews /{' '}
+                {activitySummary.cardsStudiedLast7Days} cards
               </p>
             </div>
 
@@ -426,24 +513,6 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
               </p>
               <p className="mt-2 text-base font-semibold">
                 {deck.useGlobalLimits ? 'Global defaults' : 'Deck override'}
-              </p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                New card order
-              </p>
-              <p className="mt-2 text-base font-semibold">
-                Oldest first
-              </p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Last updated
-              </p>
-              <p className="mt-2 text-base font-semibold">
-                {formatTimestamp(deck.updatedAt)}
               </p>
             </div>
           </CardContent>
