@@ -6,12 +6,16 @@ import { bootstrapAppDb } from '@/db/bootstrap'
 import { APP_SETTINGS_ID } from '@/entities/app-settings'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 
-const { importAnkiPackageMock } = vi.hoisted(() => ({
+const {
+  ensureStoragePersistenceMock,
+  importAnkiPackageMock,
+} = vi.hoisted(() => ({
+  ensureStoragePersistenceMock: vi.fn(),
   importAnkiPackageMock: vi.fn(),
 }))
 
 vi.mock('@/lib/storage-persistence', () => ({
-  ensureStoragePersistence: vi.fn().mockResolvedValue('granted'),
+  ensureStoragePersistence: ensureStoragePersistenceMock,
 }))
 
 vi.mock('@/importers/anki-apkg', () => ({
@@ -33,6 +37,8 @@ async function resetAppDb() {
 
 describe('SettingsPage', () => {
   beforeEach(async () => {
+    ensureStoragePersistenceMock.mockReset()
+    ensureStoragePersistenceMock.mockResolvedValue('granted')
     importAnkiPackageMock.mockReset()
     await resetAppDb()
     await bootstrapAppDb(appDb)
@@ -67,6 +73,25 @@ describe('SettingsPage', () => {
       expect(settings?.globalNewCardsPerDay).toBe(7)
       expect(settings?.globalMaxReviewsPerDay).toBe(40)
     })
+  })
+
+  it('shows practical install guidance and local-only expectations in settings', async () => {
+    ensureStoragePersistenceMock.mockResolvedValue('best-effort')
+
+    renderSettingsPage()
+
+    expect(await screen.findByText('Install and offline use')).toBeInTheDocument()
+    expect(screen.getByText('Desktop install')).toBeInTheDocument()
+    expect(screen.getByText('iPhone install')).toBeInTheDocument()
+    expect(screen.getByText('Offline expectations')).toBeInTheDocument()
+    expect(screen.getByText('What stays local')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Add to Home Screen/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Storage durability is currently/i),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('Best-effort').length).toBeGreaterThan(0)
   })
 
   it('imports a selected apkg package and shows the image-preserving summary', async () => {
