@@ -171,6 +171,68 @@ describe('EditCardPage', () => {
     })
   })
 
+  it('keeps sanitized quick-capture content editable when the payload only has recoverable warnings', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-1',
+      name: 'Spanish',
+      description: 'Travel phrases',
+    })
+    createCardMock.mockResolvedValue({
+      id: 'card-1',
+      deckId: 'deck-1',
+      frontText: 'obscure',
+      backText: 'hidden',
+    })
+
+    renderWithRouter(
+      `/decks/deck-1/cards/new?front=${'f'.repeat(301)}&back=hidden&front=ignored&foo=bar`,
+      <EditCardPage mode="create" />,
+    )
+
+    expect(
+      await screen.findByText('Quick capture adjusted part of the payload.'),
+    ).toBeInTheDocument()
+    expect(screen.getByDisplayValue('f'.repeat(300))).toBeInTheDocument()
+    expect(screen.getByDisplayValue('hidden')).toBeInTheDocument()
+    expect(screen.getByText('Ignored 1 unsupported capture field.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Front text was trimmed to 300 characters.'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create card' }))
+
+    await waitFor(() => {
+      expect(createCardMock).toHaveBeenCalledWith('deck-1', {
+        frontText: 'f'.repeat(300),
+        backText: 'hidden',
+        backImage: null,
+      })
+    })
+  })
+
+  it('does not prefill a context-only quick-capture payload into a pretend card draft', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-1',
+      name: 'Spanish',
+      description: 'Travel phrases',
+    })
+
+    renderWithRouter(
+      '/decks/deck-1/cards/new?context=Seen%20in%20a%20sentence.',
+      <EditCardPage mode="create" />,
+    )
+
+    expect(
+      await screen.findByText('Quick capture prefill could not be used.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Quick capture needs front or back text before it can continue into the card editor.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Quick capture draft')).not.toBeInTheDocument()
+  })
+
   it('creates a card with one selected back image', async () => {
     getDeckMock.mockResolvedValue({
       id: 'deck-1',

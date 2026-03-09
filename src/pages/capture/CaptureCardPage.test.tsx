@@ -107,6 +107,37 @@ describe('CaptureCardPage', () => {
         'No supported capture fields were found. Use front, back, and optional context.',
       ),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Capture details need attention' }),
+    ).toBeDisabled()
+  })
+
+  it('blocks context-only payloads clearly instead of pretending there is a usable card draft', async () => {
+    listDecksMock.mockResolvedValue([
+      {
+        id: 'deck-1',
+        name: 'English',
+        description: 'Core vocabulary',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 10,
+        updatedAt: 10,
+      },
+    ])
+
+    renderCapturePage('/capture/card?context=Seen%20in%20a%20sentence.')
+
+    expect(
+      await screen.findByText(
+        'Quick capture needs front or back text before it can continue into the card editor.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Captured context')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Capture details need attention' }),
+    ).toBeDisabled()
   })
 
   it('keeps deck selection explicit when no deckId arrives and multiple local decks exist', async () => {
@@ -153,6 +184,39 @@ describe('CaptureCardPage', () => {
         '/decks/deck-2/cards/new?front=obscure&back=hidden',
       )
     })
+  })
+
+  it('preserves sanitized content and warns when the payload is oversized or noisy', async () => {
+    listDecksMock.mockResolvedValue([
+      {
+        id: 'deck-1',
+        name: 'English',
+        description: 'Core vocabulary',
+        useGlobalLimits: true,
+        newCardsPerDayOverride: null,
+        maxReviewsPerDayOverride: null,
+        newCardOrder: 'oldest_first',
+        createdAt: 10,
+        updatedAt: 10,
+      },
+    ])
+
+    renderCapturePage(
+      `/capture/card?front=${'f'.repeat(301)}&back=hidden&front=ignored&foo=bar`,
+    )
+
+    expect(
+      await screen.findByText('Ranki adjusted part of this capture.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Multiple front values were provided. Ranki kept the first usable value.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Ignored 1 unsupported capture field.')).toBeInTheDocument()
+    expect(screen.getByText('Front text was trimmed to 300 characters.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Continue to English' })).toHaveAttribute(
+      'href',
+      `/decks/deck-1/cards/new?front=${'f'.repeat(300)}&back=hidden`,
+    )
   })
 
   it('falls back cleanly when the requested deckId is invalid and still lets the user recover manually', async () => {

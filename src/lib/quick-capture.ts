@@ -3,6 +3,7 @@ export const MAX_QUICK_CAPTURE_QUERY_LENGTH = 6_000
 export const MAX_QUICK_CAPTURE_FRONT_TEXT_LENGTH = 300
 export const MAX_QUICK_CAPTURE_BACK_TEXT_LENGTH = 4_000
 export const MAX_QUICK_CAPTURE_CONTEXT_LENGTH = 2_000
+export const MAX_QUICK_CAPTURE_DECK_ID_LENGTH = 120
 
 export interface QuickCapturePayload {
   frontText: string
@@ -14,68 +15,143 @@ export interface QuickCapturePayload {
 export interface ParseQuickCaptureResult {
   payload: QuickCapturePayload
   errors: string[]
+  warnings: string[]
   hasSupportedFields: boolean
 }
 
-function readTrimmedParam(params: URLSearchParams, key: string) {
-  const value = params.get(key)?.trim() ?? ''
+const SUPPORTED_QUICK_CAPTURE_PARAMS = new Set([
+  'back',
+  'context',
+  'deckId',
+  'front',
+])
+
+function normalizeQuickCaptureValue(value: string) {
+  const withoutControlCharacters = value
+    .replace(/\r\n/g, '\n')
+    .split('')
+    .filter((character) => {
+      if (character === '\n' || character === '\t') {
+        return true
+      }
+
+      const codePoint = character.charCodeAt(0)
+      return !(codePoint < 32 || codePoint === 127)
+    })
+    .join('')
+    .trim()
+
+  return withoutControlCharacters.length > 0 ? withoutControlCharacters : ''
+}
+
+function readNormalizedParam(params: URLSearchParams, key: string, warnings: string[]) {
+  const normalizedValues = params.getAll(key).map(normalizeQuickCaptureValue)
+  const values = normalizedValues.filter(Boolean)
+
+  if (normalizedValues.length > 1) {
+    warnings.push(`Multiple ${key} values were provided. Ranki kept the first usable value.`)
+  }
+
+  const value = values[0] ?? ''
   return value.length > 0 ? value : ''
 }
 
-function validateFieldLength(
+function clampFieldLength(
   value: string,
   maxLength: number,
   fieldLabel: string,
-  errors: string[],
+  warnings: string[],
 ) {
   if (value.length > maxLength) {
-    errors.push(`${fieldLabel} must stay under ${maxLength} characters.`)
+    warnings.push(`${fieldLabel} was trimmed to ${maxLength} characters.`)
+    return value.slice(0, maxLength)
   }
+
+  return value
+}
+
+function normalizeDeckId(deckId: string, warnings: string[]) {
+  if (!deckId) {
+    return null
+  }
+
+  if (deckId.length > MAX_QUICK_CAPTURE_DECK_ID_LENGTH || /\s/.test(deckId)) {
+    warnings.push(
+      'The requested deck reference was ignored because it was malformed.',
+    )
+    return null
+  }
+
+  return deckId
 }
 
 export function hasQuickCaptureContent(payload: QuickCapturePayload) {
   return Boolean(payload.frontText || payload.backText || payload.contextText)
 }
 
+export function hasQuickCaptureCardDraftContent(payload: QuickCapturePayload) {
+  return Boolean(payload.frontText || payload.backText)
+}
+
 export function parseQuickCaptureSearchParams(
   params: URLSearchParams,
 ): ParseQuickCaptureResult {
-  const frontText = readTrimmedParam(params, 'front')
-  const backText = readTrimmedParam(params, 'back')
-  const contextParam = readTrimmedParam(params, 'context')
-  const deckId = readTrimmedParam(params, 'deckId')
+  const errors: string[] = []
+  const warnings: string[] = []
+  const unsupportedParams = [...new Set([...params.keys()])].filter(
+    (key) => !SUPPORTED_QUICK_CAPTURE_PARAMS.has(key),
+  )
+
+  if (unsupportedParams.length > 0) {
+    warnings.push(
+      `Ignored ${unsupportedParams.length} unsupported capture field${unsupportedParams.length === 1 ? '' : 's'}.`,
+    )
+  }
+
+  const frontText = clampFieldLength(
+    readNormalizedParam(params, 'front', warnings),
+    MAX_QUICK_CAPTURE_FRONT_TEXT_LENGTH,
+    'Front text',
+    warnings,
+  )
+  const backText = clampFieldLength(
+    readNormalizedParam(params, 'back', warnings),
+    MAX_QUICK_CAPTURE_BACK_TEXT_LENGTH,
+    'Back text',
+    warnings,
+  )
+  const contextParam = clampFieldLength(
+    readNormalizedParam(params, 'context', warnings),
+    MAX_QUICK_CAPTURE_CONTEXT_LENGTH,
+    'Context text',
+    warnings,
+  )
+  const deckId = normalizeDeckId(
+    readNormalizedParam(params, 'deckId', warnings),
+    warnings,
+  )
   const payload: QuickCapturePayload = {
     frontText,
     backText,
     contextText: contextParam || null,
-    deckId: deckId || null,
+    deckId,
   }
-  const errors: string[] = []
 
   if (params.toString().length > MAX_QUICK_CAPTURE_QUERY_LENGTH) {
-    errors.push(
-      `This first-pass capture URL must stay under ${MAX_QUICK_CAPTURE_QUERY_LENGTH} characters.`,
+    warnings.push(
+      `This first-pass capture URL was longer than ${MAX_QUICK_CAPTURE_QUERY_LENGTH} characters. Ranki kept the supported fields it could read.`,
     )
   }
 
-  validateFieldLength(
-    payload.frontText,
-    MAX_QUICK_CAPTURE_FRONT_TEXT_LENGTH,
-    'Front text',
-    errors,
-  )
-  validateFieldLength(
-    payload.backText,
-    MAX_QUICK_CAPTURE_BACK_TEXT_LENGTH,
-    'Back text',
-    errors,
-  )
-  validateFieldLength(
-    payload.contextText ?? '',
-    MAX_QUICK_CAPTURE_CONTEXT_LENGTH,
-    'Context text',
-    errors,
-  )
+  if (!hasQuickCaptureCardDraftContent(payload) && payload.contextText) {
+    errors.push(
+      'Quick capture needs front or back text before it can continue into the card editor.',
+    )
+  } else if (payload.frontText && !payload.backText) {
+    warnings.push('Back text is missing. You can finish it in the editor before saving.')
+  } else if (!payload.frontText && payload.backText) {
+    warnings.push('Front text is missing. You can finish it in the editor before saving.')
+  }
 
   if (!hasQuickCaptureContent(payload)) {
     errors.push(
@@ -86,6 +162,7 @@ export function parseQuickCaptureSearchParams(
   return {
     payload,
     errors,
+    warnings,
     hasSupportedFields: hasQuickCaptureContent(payload),
   }
 }
