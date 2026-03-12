@@ -21,7 +21,9 @@ describe('AppHeader', () => {
       ),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/Reading tools and statistics remain available as extras/i),
+      screen.getByText(
+        /Reading tools and statistics stay available as optional extras/i,
+      ),
     ).toBeInTheDocument()
 
     const primaryNavigation = screen.getByRole('navigation', {
@@ -43,6 +45,6 @@ describe('AppHeader', () => {
     expect(
       within(extrasNavigation).getByRole('link', { name: 'Statistics' }),
     ).toHaveAttribute('href', '/statistics')
-    expect(screen.getByText('Extras')).toBeInTheDocument()
+    expect(screen.getByText('Optional extras')).toBeInTheDocument()
   })
 })

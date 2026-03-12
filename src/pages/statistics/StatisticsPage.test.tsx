@@ -170,6 +170,7 @@ describe('StatisticsPage', () => {
     renderStatisticsPage()
 
     expect(await screen.findByRole('heading', { name: 'Statistics' })).toBeInTheDocument()
+    expect(screen.getByText('Optional extra')).toBeInTheDocument()
     expect(
       screen.getByText(/Quiet in the last 7 local days/i),
     ).toBeInTheDocument()
@@ -220,6 +221,10 @@ describe('StatisticsPage', () => {
     renderStatisticsPage()
 
     expect(await screen.findByRole('heading', { name: 'Statistics' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to decks' })).toHaveAttribute(
+      'href',
+      '/',
+    )
     expect(screen.getByText('Reviews today')).toBeInTheDocument()
     expect(screen.getByText('Cards studied today')).toBeInTheDocument()
     expect(screen.getByText('Reviews in last 7 days')).toBeInTheDocument()

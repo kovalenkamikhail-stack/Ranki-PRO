@@ -81,6 +81,7 @@ describe('SettingsPage', () => {
     renderSettingsPage()
 
     expect(await screen.findByText('Install and offline use')).toBeInTheDocument()
+    expect(screen.getByText('Core MVP')).toBeInTheDocument()
     expect(screen.getByText('Desktop install')).toBeInTheDocument()
     expect(screen.getByText('iPhone install')).toBeInTheDocument()
     expect(screen.getByText('Offline expectations')).toBeInTheDocument()
@@ -113,6 +114,10 @@ describe('SettingsPage', () => {
     })
 
     renderSettingsPage()
+
+    expect(await screen.findByText('Import Anki package preview')).toBeInTheDocument()
+    expect(screen.getByText('Optional extra')).toBeInTheDocument()
+    expect(screen.getByText('Local migration utility')).toBeInTheDocument()
 
     const apkgFile = new File(['anki-package'], 'english.apkg', {
       type: 'application/octet-stream',

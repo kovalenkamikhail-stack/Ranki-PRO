@@ -90,7 +90,8 @@ function ReadingLibraryIntro({
     <Card className="h-fit overflow-hidden">
       <CardHeader className="gap-5">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="accent">Reading tools</Badge>
+          <Badge variant="accent">Optional extra</Badge>
+          <Badge variant="outline">Reading tools</Badge>
           <Badge variant="outline">Local-first library</Badge>
         </div>
 
@@ -102,8 +103,8 @@ function ReadingLibraryIntro({
           </CardTitle>
           <CardDescription className="max-w-2xl text-base">
             {hasDocuments
-              ? 'Saved notes stay easy to reopen, and the next pasted text opens in the reader right after you save it.'
-              : 'Paste an article, transcript, or chapter excerpt, then reopen it later and continue from the last saved spot on this device.'}
+              ? 'Saved notes stay easy to reopen, and the next pasted text opens in the reader right after you save it. Decks and study session still remain the MVP core path.'
+              : 'Paste an article, transcript, or chapter excerpt, then reopen it later and continue from the last saved spot on this device. This extra stays nearby without replacing deck-first review.'}
           </CardDescription>
         </div>
       </CardHeader>
@@ -164,16 +165,16 @@ function ReadingLibraryIntro({
         <div className="rounded-[1.4rem] border border-primary/20 bg-primary/5 p-4">
           <p className="font-medium text-foreground">Also available: local EPUB books</p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Open the separate book library to import EPUB files and continue in
-            the dedicated book reader without affecting your saved reading
-            notes.
+            Open the separate optional book library to import EPUB files and
+            continue in the dedicated reader without affecting your saved
+            reading notes or the core deck workflow.
           </p>
         </div>
 
         <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
           Reading stays local to this install, and saved documents remain
-          separate from decks and card review so the workflow stays calm and
-          explicit.
+          separate from decks and card review so the workflow stays calm,
+          explicit, and visibly secondary to the core MVP flow.
         </div>
       </CardContent>
     </Card>

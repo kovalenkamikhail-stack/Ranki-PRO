@@ -244,7 +244,8 @@ export function EditReadingDocumentPage() {
     <Card className="mx-auto max-w-3xl">
       <CardHeader className="gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="accent">Reading editor</Badge>
+          <Badge variant="accent">Optional extra</Badge>
+          <Badge variant="outline">Reading editor</Badge>
           <Badge variant="outline">Local-only note</Badge>
         </div>
 
@@ -253,7 +254,7 @@ export function EditReadingDocumentPage() {
           <CardDescription className="text-base">
             Update the saved title or text without losing the local resume
             point. Delete remains explicit and reversible only through
-            confirmation.
+            confirmation, while decks and study session remain the MVP core.
           </CardDescription>
         </div>
       </CardHeader>
@@ -365,6 +366,10 @@ export function EditReadingDocumentPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to reading view
               </Link>
+            </Button>
+
+            <Button asChild variant="ghost" size="lg" className="w-full sm:w-auto">
+              <Link to="/">Back to decks</Link>
             </Button>
 
             <Button

@@ -391,7 +391,8 @@ function BookReaderWorkspace({ bookId }: { bookId: string }) {
       <Card className="overflow-hidden">
         <CardHeader className="gap-4 border-b border-border/50 bg-card/72">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="accent">Book reader</Badge>
+            <Badge variant="accent">Optional extra</Badge>
+            <Badge variant="outline">Experimental EPUB reader</Badge>
             <Badge variant="outline">EPUB</Badge>
             <Badge variant="outline">Saved on this device</Badge>
           </div>
@@ -447,6 +448,10 @@ function BookReaderWorkspace({ bookId }: { bookId: string }) {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to book library
               </Link>
+            </Button>
+
+            <Button asChild variant="ghost" size="lg" className="w-full sm:w-auto">
+              <Link to="/">Back to decks</Link>
             </Button>
 
             <Button
