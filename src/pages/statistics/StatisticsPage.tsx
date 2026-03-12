@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ArrowRight,
   BarChart3,
   BookOpenText,
@@ -383,7 +384,8 @@ export function StatisticsPage() {
         <Card className="overflow-hidden">
           <CardHeader className="gap-5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="accent">Statistics</Badge>
+              <Badge variant="accent">Optional extra</Badge>
+              <Badge variant="outline">Statistics</Badge>
               <Badge variant="outline">Saved review logs only</Badge>
               <Badge variant="outline">Local-first activity</Badge>
             </div>
@@ -395,7 +397,8 @@ export function StatisticsPage() {
               <CardDescription className="max-w-2xl text-base">
                 See recent study activity from persisted review logs on this
                 device. The page stays descriptive about effort and frequency,
-                not mastery or retention claims.
+                not mastery or retention claims, and remains outside the core
+                deck-and-study workflow.
               </CardDescription>
             </div>
           </CardHeader>
@@ -441,6 +444,21 @@ export function StatisticsPage() {
               Every number on this screen comes from saved `reviewLogs`.
               Nothing is sent to a server, and the page intentionally keeps its
               claims narrower than the stored data itself.
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button asChild>
+                <Link to="/">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to decks
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/settings">
+                  Open settings
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>

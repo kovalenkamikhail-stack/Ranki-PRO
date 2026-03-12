@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ArrowRight,
   BookOpenText,
   Clock3,
@@ -122,7 +123,8 @@ export function BookLibraryPage() {
         <Card className="h-fit overflow-hidden">
           <CardHeader className="gap-5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="accent">Book reader</Badge>
+              <Badge variant="accent">Optional extra</Badge>
+              <Badge variant="outline">Experimental EPUB reader</Badge>
               <Badge variant="outline">EPUB foundation</Badge>
             </div>
 
@@ -131,9 +133,9 @@ export function BookLibraryPage() {
                 Import real books and keep them readable offline.
               </CardTitle>
               <CardDescription className="max-w-2xl text-base">
-                This first slice starts the actual book-reader direction with
-                local EPUB import, a dedicated reader view, and saved reading
-                position on this device.
+                This extra keeps local EPUB import, a dedicated reader view, and
+                saved reading position available on this device without
+                displacing the deck-first MVP flow.
               </CardDescription>
             </div>
           </CardHeader>
@@ -182,10 +184,16 @@ export function BookLibraryPage() {
                 className="w-full sm:w-auto"
               >
                 <Upload className="mr-2 h-4 w-4" />
-                {isImporting ? 'Importing EPUB...' : 'Import EPUB book'}
+                {isImporting ? 'Importing EPUB...' : 'Import EPUB book (optional)'}
               </Button>
               <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
                 <Link to="/reading">Open reading tools</Link>
+              </Button>
+              <Button asChild variant="ghost" size="lg" className="w-full sm:w-auto">
+                <Link to="/">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to decks
+                </Link>
               </Button>
             </div>
 
@@ -367,7 +375,7 @@ export function BookLibraryPage() {
                 <LibraryBig className="h-6 w-6" />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight">
-                Import the first EPUB to start the real book-reader path.
+                Import the first EPUB to try the optional book-reader path.
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
                 Choose a local non-DRM EPUB book from disk. Ranki will extract a
@@ -377,10 +385,13 @@ export function BookLibraryPage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button type="button" onClick={handleImportClick} disabled={isImporting}>
                   <Upload className="mr-2 h-4 w-4" />
-                  {isImporting ? 'Importing EPUB...' : 'Import EPUB book'}
+                  {isImporting ? 'Importing EPUB...' : 'Import EPUB book (optional)'}
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/reading">Open reading tools</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link to="/">Back to decks</Link>
                 </Button>
               </div>
             </div>

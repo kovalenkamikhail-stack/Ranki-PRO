@@ -172,6 +172,10 @@ export function SettingsPage() {
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <Card>
         <CardHeader>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="accent">Core MVP</Badge>
+            <Badge variant="outline">Deck-first settings</Badge>
+          </div>
           <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
             <SlidersHorizontal className="h-6 w-6" />
           </div>
@@ -392,13 +396,15 @@ export function SettingsPage() {
               <Upload className="h-6 w-6" />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">Optional extra</Badge>
+              <Badge variant="accent">Optional extra</Badge>
+              <Badge variant="outline">Local migration utility</Badge>
             </div>
-            <CardTitle>Import Anki package</CardTitle>
+            <CardTitle>Import Anki package preview</CardTitle>
             <CardDescription>
               Load a local `.apkg` deck into Ranki when you need extra card
               volume on this device. Decks, manual cards, and deck-scoped study
-              still define the MVP core flow.
+              still define the MVP core flow, and this utility stays outside the
+              core product scope.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -466,11 +472,12 @@ export function SettingsPage() {
               </label>
 
               <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-                This importer is a side utility for local testing and migration.
-                For the current English Template import, Ranki preserves the
-                expression, cleaned meaning, sentence translation, one sentence
-                of context, and one back image when present. Audio, source
-                links, and Anki scheduling are still intentionally left out.
+                This importer is a side utility for local testing and migration,
+                not part of the core Ranki workflow. For the current English
+                Template import, Ranki preserves the expression, cleaned
+                meaning, sentence translation, one sentence of context, and one
+                back image when present. Audio, source links, and Anki
+                scheduling are still intentionally left out.
               </div>
 
               <div className="flex flex-wrap gap-3">

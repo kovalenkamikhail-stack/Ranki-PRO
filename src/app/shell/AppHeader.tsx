@@ -44,8 +44,9 @@ export function AppHeader() {
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
                 Build decks, study one deck at a time, and keep your progress
-                local to this device. Reading tools and statistics remain
-                available as extras without replacing the MVP core flow.
+                local to this device. Reading tools and statistics stay
+                available as optional extras without replacing the deck-first
+                MVP core flow.
               </p>
             </div>
           </div>
@@ -75,7 +76,7 @@ export function AppHeader() {
 
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <span className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-muted-foreground">
-              Extras
+              Optional extras
             </span>
             <nav aria-label="Extras navigation" className="flex flex-wrap gap-2">
               {extraNavItems.map(({ to, label, icon: Icon }) => (

@@ -63,14 +63,14 @@ describe('BookLibraryPage', () => {
 
     expect(screen.getByText('Loading book library')).toBeInTheDocument()
     expect(
-      screen.queryByText('Import the first EPUB to start the real book-reader path.'),
+      screen.queryByText('Import the first EPUB to try the optional book-reader path.'),
     ).not.toBeInTheDocument()
 
     resolveBooks?.([])
 
     expect(
       await screen.findByText(
-        'Import the first EPUB to start the real book-reader path.',
+        'Import the first EPUB to try the optional book-reader path.',
       ),
     ).toBeInTheDocument()
   })
@@ -98,7 +98,7 @@ describe('BookLibraryPage', () => {
 
     renderBookLibraryPage()
 
-    await screen.findByText('Import EPUB book')
+    await screen.findByText('Import EPUB book (optional)')
 
     const file = new File(['epub-binary'], 'book.epub', {
       type: 'application/epub+zip',
@@ -135,8 +135,13 @@ describe('BookLibraryPage', () => {
 
     renderBookLibraryPage()
 
+    expect(await screen.findByText('Optional extra')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Book library' })).toBeInTheDocument()
     expect(screen.getByText('Most recently opened first')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to decks' })).toHaveAttribute(
+      'href',
+      '/',
+    )
     expect(
       screen.getByRole('link', { name: 'Resume book Imported Book' }),
     ).toHaveAttribute('href', '/reading/books/book-1')

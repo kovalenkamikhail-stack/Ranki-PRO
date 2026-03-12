@@ -342,7 +342,8 @@ function ReadingDocumentWorkspace({ documentId }: { documentId: string }) {
       <Card className="overflow-hidden">
         <CardHeader className="gap-4 border-b border-border/50 bg-card/72">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="accent">Reading view</Badge>
+            <Badge variant="accent">Optional extra</Badge>
+            <Badge variant="outline">Reading view</Badge>
             <Badge variant="outline">Pasted text</Badge>
             <Badge variant="outline">Saved on this device</Badge>
           </div>
@@ -354,7 +355,8 @@ function ReadingDocumentWorkspace({ documentId }: { documentId: string }) {
             <CardDescription className="max-w-2xl text-base">
               Resume from the last saved local position and keep the layout calm
               enough for longer reading sessions on desktop or iPhone-sized
-              screens.
+              screens. Deck creation and deck-scoped study still stay in the
+              core MVP lane.
             </CardDescription>
           </div>
         </CardHeader>
@@ -407,6 +409,10 @@ function ReadingDocumentWorkspace({ documentId }: { documentId: string }) {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to reading library
               </Link>
+            </Button>
+
+            <Button asChild variant="ghost" size="lg">
+              <Link to="/">Back to decks</Link>
             </Button>
           </div>
 

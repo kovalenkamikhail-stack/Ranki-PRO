@@ -144,8 +144,10 @@ describe('ReadingLibraryPage', () => {
 
     renderReadingLibraryPage()
 
+    expect(await screen.findByText('Optional extra')).toBeInTheDocument()
     expect(
       await screen.findByRole('link', { name: 'Open book library' }),
     ).toHaveAttribute('href', '/reading/books')
+    expect(screen.getAllByRole('link', { name: 'Back to decks' }).length).toBeGreaterThan(0)
   })
 })
