@@ -30,7 +30,11 @@ import {
 } from '@/db/statistics'
 import { loadDeckStudySession } from '@/db/study-session'
 import type { Card as DeckCard, CardState } from '@/entities/card'
-import type { Deck } from '@/entities/deck'
+import {
+  DEFAULT_NEW_CARD_ORDER,
+  getNewCardOrderLabel,
+  type Deck,
+} from '@/entities/deck'
 import { getDeckStudySummary, type DeckStudySummary } from '@/pages/decks/study-summary'
 
 const timestampFormatter = new Intl.DateTimeFormat(undefined, {
@@ -513,6 +517,17 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
               </p>
               <p className="mt-2 text-base font-semibold">
                 {deck.useGlobalLimits ? 'Global defaults' : 'Deck override'}
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                New card order
+              </p>
+              <p className="mt-2 text-base font-semibold">
+                {getNewCardOrderLabel(
+                  deck.newCardOrder ?? DEFAULT_NEW_CARD_ORDER,
+                )}
               </p>
             </div>
           </CardContent>

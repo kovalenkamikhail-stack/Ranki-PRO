@@ -10,6 +10,13 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { DEFAULT_GLOBAL_NEW_CARDS_PER_DAY } from '@/entities/app-settings'
+import {
+  DEFAULT_NEW_CARD_ORDER,
+  NEW_CARD_ORDER_OPTIONS,
+  getNewCardOrderLabel,
+  isNewCardOrder,
+  type NewCardOrder,
+} from '@/entities/deck'
 import { createDeck, getDeck, updateDeck } from '@/db/decks'
 
 interface EditDeckPageProps {
@@ -25,6 +32,9 @@ export function EditDeckPage({ mode }: EditDeckPageProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [useGlobalLimits, setUseGlobalLimits] = useState(true)
+  const [newCardOrder, setNewCardOrder] = useState<NewCardOrder>(
+    DEFAULT_NEW_CARD_ORDER,
+  )
   const [newCardsPerDayOverride, setNewCardsPerDayOverride] = useState(
     DEFAULT_GLOBAL_NEW_CARDS_PER_DAY.toString(),
   )
@@ -62,6 +72,7 @@ export function EditDeckPage({ mode }: EditDeckPageProps) {
         setName(deck.name)
         setDescription(deck.description ?? '')
         setUseGlobalLimits(deck.useGlobalLimits)
+        setNewCardOrder(deck.newCardOrder ?? DEFAULT_NEW_CARD_ORDER)
         setNewCardsPerDayOverride(
           (deck.newCardsPerDayOverride ?? DEFAULT_GLOBAL_NEW_CARDS_PER_DAY).toString(),
         )
@@ -126,6 +137,7 @@ export function EditDeckPage({ mode }: EditDeckPageProps) {
         name: trimmedName,
         description: trimmedDescription.length > 0 ? trimmedDescription : null,
         useGlobalLimits,
+        newCardOrder,
         newCardsPerDayOverride: useGlobalLimits
           ? null
           : parseNonNegativeInteger(
@@ -253,6 +265,43 @@ export function EditDeckPage({ mode }: EditDeckPageProps) {
             />
           </label>
 
+          <div className="space-y-4 rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">
+                New card order
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Due cards still stay first. This only changes how new cards are
+                ordered after the due queue is exhausted.
+              </p>
+            </div>
+
+            <label className="block text-sm font-medium text-foreground">
+              New card order
+              <select
+                value={newCardOrder}
+                onChange={(event) => {
+                  if (isNewCardOrder(event.target.value)) {
+                    setNewCardOrder(event.target.value)
+                  }
+                }}
+                className={inputClassName}
+                aria-label="New card order"
+              >
+                {NEW_CARD_ORDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="rounded-[1.2rem] border border-dashed border-border/70 bg-background/85 p-4 text-sm text-muted-foreground">
+              {NEW_CARD_ORDER_OPTIONS.find((option) => option.value === newCardOrder)
+                ?.description ?? getNewCardOrderLabel(newCardOrder)}
+            </div>
+          </div>
+
           {mode === 'edit' ? (
             <div className="space-y-4 rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
               <div className="space-y-2">
@@ -339,8 +388,8 @@ export function EditDeckPage({ mode }: EditDeckPageProps) {
 
           <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
             {mode === 'create'
-              ? 'Stored only on this device for MVP. New decks start on global study defaults and can add deck-specific overrides later.'
-              : 'Stored only on this device for MVP. Text-first card CRUD and the deck-scoped study session are live, and deck-level limit overrides now save directly into Dexie.'}
+              ? 'Stored only on this device for MVP. New decks start on global study defaults, and the new-card order saves with the deck right away.'
+              : 'Stored only on this device for MVP. Text-first card CRUD and the deck-scoped study session are live, and deck-level study settings now save directly into Dexie.'}
           </div>
 
           <div className="flex flex-wrap gap-3">

@@ -47,18 +47,87 @@ function compareDueCards(left: Card, right: Card) {
   return left.id.localeCompare(right.id)
 }
 
-function compareNewCards(left: Card, right: Card, newCardOrder: NewCardOrder) {
-  if (newCardOrder === 'oldest_first') {
-    const createdAtComparison = left.createdAt - right.createdAt
+function compareNewCardsOldestFirst(left: Card, right: Card) {
+  const createdAtComparison = left.createdAt - right.createdAt
 
-    if (createdAtComparison !== 0) {
-      return createdAtComparison
-    }
-
-    return left.id.localeCompare(right.id)
+  if (createdAtComparison !== 0) {
+    return createdAtComparison
   }
 
-  return 0
+  return left.id.localeCompare(right.id)
+}
+
+function hashString(value: string) {
+  let hash = 2_166_136_261
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16_777_619)
+  }
+
+  return hash >>> 0
+}
+
+function formatLocalDaySeedKey(now: number) {
+  const day = new Date(now)
+
+  return [
+    day.getFullYear(),
+    String(day.getMonth() + 1).padStart(2, '0'),
+    String(day.getDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+function createSeededRandom(seed: number) {
+  let state = seed >>> 0
+
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+
+    let mixed = state
+    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1)
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61)
+
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4_294_967_296
+  }
+}
+
+function seededShuffle<T>(items: readonly T[], seed: number) {
+  const shuffled = [...items]
+  const nextRandom = createSeededRandom(seed)
+
+  for (
+    let currentIndex = shuffled.length - 1;
+    currentIndex > 0;
+    currentIndex -= 1
+  ) {
+    const randomIndex = Math.floor(nextRandom() * (currentIndex + 1))
+    const currentItem = shuffled[currentIndex]
+
+    shuffled[currentIndex] = shuffled[randomIndex]
+    shuffled[randomIndex] = currentItem
+  }
+
+  return shuffled
+}
+
+function orderNewCards(
+  cards: readonly Card[],
+  deckId: string,
+  now: number,
+  newCardOrder: NewCardOrder,
+) {
+  const oldestFirstCards = [...cards].sort(compareNewCardsOldestFirst)
+
+  if (newCardOrder === 'oldest_first') {
+    return oldestFirstCards
+  }
+
+  // Keep random order stable for one deck within one local day.
+  return seededShuffle(
+    oldestFirstCards,
+    hashString(`${deckId}:${formatLocalDaySeedKey(now)}`),
+  )
 }
 
 function clampLimit(limit: number) {
@@ -89,9 +158,12 @@ export function buildDeckStudyQueue(
   const remainingNewCards = clampLimit(newCardsPerDay) - clampLimit(introducedNewCardsToday)
 
   const dueCards = dueCandidates.sort(compareDueCards).slice(0, dueLimit)
-  const newCards = newCandidates
-    .sort((left, right) => compareNewCards(left, right, newCardOrder))
-    .slice(0, Math.max(remainingNewCards, 0))
+  const newCards = orderNewCards(
+    newCandidates,
+    deckId,
+    now,
+    newCardOrder,
+  ).slice(0, Math.max(remainingNewCards, 0))
 
   return {
     dueCards,

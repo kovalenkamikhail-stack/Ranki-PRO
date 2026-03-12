@@ -50,6 +50,7 @@ describe('deck persistence', () => {
     expect(createdDeck.useGlobalLimits).toBe(true)
     expect(createdDeck.newCardsPerDayOverride).toBeNull()
     expect(createdDeck.maxReviewsPerDayOverride).toBeNull()
+    expect(createdDeck.newCardOrder).toBe('oldest_first')
     expect(storedDecks).toHaveLength(1)
     expect(storedDecks[0]).toEqual(createdDeck)
   })
@@ -74,6 +75,7 @@ describe('deck persistence', () => {
         useGlobalLimits: true,
         newCardsPerDayOverride: null,
         maxReviewsPerDayOverride: null,
+        newCardOrder: 'random',
       },
       database,
     )
@@ -83,6 +85,7 @@ describe('deck persistence', () => {
     expect(updatedDeck.useGlobalLimits).toBe(true)
     expect(updatedDeck.newCardsPerDayOverride).toBeNull()
     expect(updatedDeck.maxReviewsPerDayOverride).toBeNull()
+    expect(updatedDeck.newCardOrder).toBe('random')
     expect(updatedDeck.createdAt).toBe(1_000)
     expect(updatedDeck.updatedAt).toBe(2_000)
   })

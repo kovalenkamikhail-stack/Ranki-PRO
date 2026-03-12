@@ -877,11 +877,11 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
               value={queue.dueCards.length}
               detail="Due cards stay ahead of new cards."
             />
-            <MetricTile
-              label="New ready"
-              value={queue.newCards.length}
-              detail="Shown after due cards, oldest first."
-            />
+          <MetricTile
+            label="New ready"
+            value={queue.newCards.length}
+            detail="Shown after due cards using this deck's saved new-card order."
+          />
           </div>
 
           {actionError ? (

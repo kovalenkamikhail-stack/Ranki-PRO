@@ -60,6 +60,7 @@ describe('buildDeckStudyQueue', () => {
       now,
       newCardsPerDay: 10,
       maxReviewsPerDay: null,
+      newCardOrder: 'oldest_first',
     })
 
     expect(queue.dueCards.map((card) => card.id)).toEqual(['due-early', 'due-late'])
@@ -70,6 +71,71 @@ describe('buildDeckStudyQueue', () => {
       'new-early',
       'new-late',
     ])
+  })
+
+  it('keeps due cards first and applies a deterministic daily shuffle to new cards', () => {
+    const randomNow = new Date(2026, 2, 7, 12, 0, 0, 0).getTime()
+    const cards = [
+      buildCard({
+        id: 'new-4',
+        createdAt: 400,
+      }),
+      buildCard({
+        id: 'due-1',
+        state: 'review',
+        ladderStepIndex: 1,
+        dueAt: randomNow - 30_000,
+        lastReviewedAt: randomNow - 3_000,
+        createdAt: 250,
+      }),
+      buildCard({
+        id: 'new-2',
+        createdAt: 200,
+      }),
+      buildCard({
+        id: 'new-1',
+        createdAt: 100,
+      }),
+      buildCard({
+        id: 'new-3',
+        createdAt: 300,
+      }),
+    ]
+
+    const queue = buildDeckStudyQueue({
+      deckId: 'deck-1',
+      cards,
+      now: randomNow,
+      newCardsPerDay: 10,
+      maxReviewsPerDay: null,
+      newCardOrder: 'random',
+    })
+    const reorderedInputQueue = buildDeckStudyQueue({
+      deckId: 'deck-1',
+      cards: [...cards].reverse(),
+      now: randomNow,
+      newCardsPerDay: 10,
+      maxReviewsPerDay: null,
+      newCardOrder: 'random',
+    })
+
+    expect(queue.dueCards.map((card) => card.id)).toEqual(['due-1'])
+    expect(queue.newCards.map((card) => card.id)).toEqual([
+      'new-2',
+      'new-3',
+      'new-1',
+      'new-4',
+    ])
+    expect(queue.cards.map((card) => card.id)).toEqual([
+      'due-1',
+      'new-2',
+      'new-3',
+      'new-1',
+      'new-4',
+    ])
+    expect(reorderedInputQueue.newCards.map((card) => card.id)).toEqual(
+      queue.newCards.map((card) => card.id),
+    )
   })
 
   it('uses deterministic due tie-breakers before falling back to card id', () => {
