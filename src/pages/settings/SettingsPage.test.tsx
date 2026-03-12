@@ -91,7 +91,9 @@ describe('SettingsPage', () => {
     expect(
       screen.getByText(/Storage durability is currently/i),
     ).toBeInTheDocument()
-    expect(screen.getAllByText('Best-effort').length).toBeGreaterThan(0)
+    await waitFor(() => {
+      expect(screen.getAllByText('Best-effort').length).toBeGreaterThan(0)
+    })
   })
 
   it('imports a selected apkg package and shows the image-preserving summary', async () => {
