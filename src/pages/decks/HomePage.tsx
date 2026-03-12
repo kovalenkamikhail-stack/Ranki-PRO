@@ -175,19 +175,18 @@ export function HomePage() {
         <Card className="overflow-hidden">
           <CardHeader className="gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="accent">Deck CRUD</Badge>
+              <Badge variant="accent">Deck-first MVP</Badge>
               <Badge variant="outline">IndexedDB on this device</Badge>
             </div>
 
             <div className="space-y-3">
               <CardTitle className="max-w-2xl text-3xl sm:text-4xl">
-                Your decks are now real local records instead of a foundation
-                placeholder.
+                Decks stay at the center of Ranki&apos;s MVP.
               </CardTitle>
               <CardDescription className="max-w-2xl text-base">
-                Create, rename, and delete decks offline. Each deck now opens
-                into a real local workspace with text-first card CRUD, while
-                study counters now reflect the existing deck-scoped session seam.
+                Create, rename, and manage decks offline. Each deck opens into
+                a local workspace for manual card work and deck-scoped study,
+                while extra surfaces stay nearby without replacing the core flow.
               </CardDescription>
             </div>
           </CardHeader>
@@ -218,11 +217,11 @@ export function HomePage() {
 
               <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Scope guard
+                  Study scope
                 </p>
-                <p className="mt-2 text-xl font-semibold">No cards yet</p>
+                <p className="mt-2 text-xl font-semibold">One deck at a time</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Due and new counters now read from the study queue.
+                  Due and new counters stay tied to the selected deck queue.
                 </p>
               </div>
             </div>
@@ -321,10 +320,9 @@ export function HomePage() {
                 No decks yet on this device.
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                Create the first deck to start building a local study library.
-                Each deck opens into a real workspace with card CRUD, while
-                due and new counters now come straight from the saved study
-                queue.
+                Create the first deck to start a local flashcards library. Each
+                deck opens into its own workspace for cards and deck-scoped
+                review, with progress saved on this device.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button asChild>
@@ -347,7 +345,7 @@ export function HomePage() {
               <h2 className="text-2xl font-semibold tracking-tight">Decks</h2>
               <p className="text-sm text-muted-foreground">
                 {decks.length} {decks.length === 1 ? 'deck' : 'decks'} stored
-                locally and ready for the next MVP slices.
+                locally and ready for deck-scoped study.
               </p>
             </div>
             <Button asChild>
@@ -371,7 +369,7 @@ export function HomePage() {
                         <CardTitle>{deck.name}</CardTitle>
                         <CardDescription>
                           {deck.description ??
-                            'No description yet. Use this deck shell for an upcoming card slice.'}
+                            'No description yet. Add cards when you are ready to study this deck.'}
                         </CardDescription>
                       </div>
                       <Badge variant="outline">
