@@ -107,6 +107,7 @@ describe('DeckDetailsPage', () => {
       useGlobalLimits: false,
       newCardsPerDayOverride: 5,
       maxReviewsPerDayOverride: 30,
+      newCardOrder: 'random',
     })
     const firstCard = buildCard({
       deckId: deck.id,
@@ -155,6 +156,7 @@ describe('DeckDetailsPage', () => {
 
     expect(await screen.findByText('Cards stored')).toBeInTheDocument()
     expect(screen.getByText('Deck override')).toBeInTheDocument()
+    expect(screen.getByText('Randomized daily')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'obscure' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'harbor' })).toBeInTheDocument()
     expect(

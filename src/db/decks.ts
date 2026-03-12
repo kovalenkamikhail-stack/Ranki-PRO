@@ -3,6 +3,8 @@ import { DEFAULT_GLOBAL_NEW_CARDS_PER_DAY } from '@/entities/app-settings'
 import {
   DEFAULT_NEW_CARD_ORDER,
   type Deck,
+  type NewCardOrder,
+  isNewCardOrder,
 } from '@/entities/deck'
 import { createId } from '@/lib/ids'
 import { nowMs } from '@/lib/time'
@@ -13,6 +15,7 @@ export interface DeckDraft {
   useGlobalLimits?: boolean
   newCardsPerDayOverride?: number | null
   maxReviewsPerDayOverride?: number | null
+  newCardOrder?: NewCardOrder
 }
 
 function normalizeDeckDraft(draft: DeckDraft) {
@@ -84,6 +87,20 @@ function normalizeDeckStudySettings(draft: DeckDraft, existing?: Deck) {
   }
 }
 
+function normalizeNewCardOrder(
+  newCardOrder: DeckDraft['newCardOrder'],
+  existing?: Deck,
+) {
+  const resolvedNewCardOrder =
+    newCardOrder ?? existing?.newCardOrder ?? DEFAULT_NEW_CARD_ORDER
+
+  if (!isNewCardOrder(resolvedNewCardOrder)) {
+    throw new Error('Deck new card order is invalid.')
+  }
+
+  return resolvedNewCardOrder
+}
+
 export async function listDecks(database: RankiDb = appDb) {
   return database.decks.orderBy('updatedAt').reverse().toArray()
 }
@@ -104,7 +121,7 @@ export async function createDeck(
     name: normalized.name,
     description: normalized.description,
     ...normalizedStudySettings,
-    newCardOrder: DEFAULT_NEW_CARD_ORDER,
+    newCardOrder: normalizeNewCardOrder(draft.newCardOrder),
     createdAt: timestamp,
     updatedAt: timestamp,
   }
@@ -133,6 +150,7 @@ export async function updateDeck(
       name: normalized.name,
       description: normalized.description,
       ...normalizedStudySettings,
+      newCardOrder: normalizeNewCardOrder(draft.newCardOrder, existing),
       updatedAt: nowMs(),
     }
 

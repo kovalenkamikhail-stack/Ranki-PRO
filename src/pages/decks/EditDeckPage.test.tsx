@@ -63,6 +63,9 @@ describe('EditDeckPage', () => {
     fireEvent.change(screen.getByLabelText('Description'), {
       target: { value: '  Travel phrases  ' },
     })
+    fireEvent.change(screen.getByLabelText('New card order'), {
+      target: { value: 'random' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Create deck' }))
 
     await waitFor(() => {
@@ -70,6 +73,7 @@ describe('EditDeckPage', () => {
         name: 'Spanish',
         description: 'Travel phrases',
         useGlobalLimits: true,
+        newCardOrder: 'random',
         newCardsPerDayOverride: null,
         maxReviewsPerDayOverride: null,
       })
@@ -86,6 +90,7 @@ describe('EditDeckPage', () => {
       useGlobalLimits: true,
       newCardsPerDayOverride: null,
       maxReviewsPerDayOverride: null,
+      newCardOrder: 'random',
     })
     updateDeckMock.mockResolvedValue({
       id: 'deck-42',
@@ -94,6 +99,7 @@ describe('EditDeckPage', () => {
       useGlobalLimits: true,
       newCardsPerDayOverride: null,
       maxReviewsPerDayOverride: null,
+      newCardOrder: 'oldest_first',
     })
 
     renderWithRouter('/decks/deck-42/edit', <EditDeckPage mode="edit" />)
@@ -101,12 +107,16 @@ describe('EditDeckPage', () => {
     expect(await screen.findByDisplayValue('French')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Common verbs')).toBeInTheDocument()
     expect(screen.getByLabelText('Use global study limits')).toBeChecked()
+    expect(screen.getByLabelText('New card order')).toHaveValue('random')
 
     fireEvent.change(screen.getByLabelText('Deck name'), {
       target: { value: ' French B1 ' },
     })
     fireEvent.change(screen.getByLabelText('Description'), {
       target: { value: ' Common verbs and phrases ' },
+    })
+    fireEvent.change(screen.getByLabelText('New card order'), {
+      target: { value: 'oldest_first' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
@@ -115,6 +125,7 @@ describe('EditDeckPage', () => {
         name: 'French B1',
         description: 'Common verbs and phrases',
         useGlobalLimits: true,
+        newCardOrder: 'oldest_first',
         newCardsPerDayOverride: null,
         maxReviewsPerDayOverride: null,
       })
@@ -131,6 +142,7 @@ describe('EditDeckPage', () => {
       useGlobalLimits: false,
       newCardsPerDayOverride: 5,
       maxReviewsPerDayOverride: 30,
+      newCardOrder: 'oldest_first',
     })
     updateDeckMock.mockResolvedValue({
       id: 'deck-42',
@@ -139,6 +151,7 @@ describe('EditDeckPage', () => {
       useGlobalLimits: false,
       newCardsPerDayOverride: 8,
       maxReviewsPerDayOverride: 40,
+      newCardOrder: 'oldest_first',
     })
 
     renderWithRouter('/decks/deck-42/edit', <EditDeckPage mode="edit" />)
@@ -161,6 +174,7 @@ describe('EditDeckPage', () => {
         name: 'French',
         description: 'Common verbs',
         useGlobalLimits: false,
+        newCardOrder: 'oldest_first',
         newCardsPerDayOverride: 8,
         maxReviewsPerDayOverride: 40,
       })
