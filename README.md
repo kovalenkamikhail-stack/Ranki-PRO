@@ -82,7 +82,7 @@ Primary repo smoke:
 corepack pnpm smoke:pwa
 ```
 
-This builds the app, launches a local preview, verifies deck CRUD plus offline PWA behavior, and writes artifacts to `output/playwright/pwa-smoke/`.
+This builds the app, launches a local preview, verifies the core deck/card/study flashcards flow plus offline PWA behavior, and writes artifacts to `output/playwright/pwa-smoke/`.
 
 Additional repo helpers that exist today:
 
