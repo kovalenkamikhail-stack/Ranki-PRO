@@ -66,6 +66,28 @@ async function terminatePreview(preview) {
   }
 }
 
+async function waitForServiceWorker(page) {
+  await page.waitForFunction(async () => {
+    if (!('serviceWorker' in navigator)) {
+      return false
+    }
+
+    try {
+      await navigator.serviceWorker.ready
+      return true
+    } catch {
+      return false
+    }
+  })
+
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller))
+}
+
+async function waitForMetricValue(page, label, value) {
+  const metricTile = page.getByText(label, { exact: true }).locator('xpath=..')
+  await metricTile.getByText(value, { exact: true }).waitFor()
+}
+
 async function main() {
   await mkdir(outputDir, { recursive: true })
 
@@ -102,14 +124,17 @@ async function main() {
     const browser = await chromium.launch({ headless: !headed })
     const context = await browser.newContext()
     const page = await context.newPage()
+    page.setDefaultTimeout(10_000)
 
     page.on('console', (message) => {
       browserConsole.push(`[${message.type()}] ${message.text()}`)
     })
 
+    console.log('Opening decks home')
     await page.goto(baseUrl, { waitUntil: 'networkidle' })
-    await page.getByRole('heading', { name: 'No decks yet' }).waitFor()
+    await page.getByRole('heading', { name: 'No decks yet on this device.' }).waitFor()
 
+    console.log('Creating deck')
     await page.getByRole('link', { name: 'Create your first deck' }).click()
     await page.getByLabel('Deck name').fill('English')
     await page.getByLabel('Description').fill('Core vocabulary')
@@ -117,35 +142,65 @@ async function main() {
     await page.getByRole('heading', { name: 'English' }).waitFor()
     await page.screenshot({ path: join(outputDir, 'deck-home-online.png') })
 
+    console.log('Opening deck workspace')
     await page.getByRole('link', { name: 'Open English' }).click()
     await page.getByRole('heading', { name: 'No cards in this deck yet.' }).waitFor()
     await page.screenshot({ path: join(outputDir, 'deck-details-online.png') })
 
+    console.log('Creating first card')
+    await page.getByRole('link', { name: 'Add first card' }).click()
+    await page.getByLabel('Front text').fill('obscure')
+    await page.getByLabel('Back text').fill('hidden or difficult to understand')
+    await page.getByRole('button', { name: 'Create card' }).click()
+    await page.getByRole('heading', { name: 'English' }).waitFor()
+    await waitForMetricValue(page, 'Cards stored', '1')
+    await page.getByRole('link', { name: 'Edit obscure' }).waitFor()
+    await page.screenshot({ path: join(outputDir, 'deck-details-with-card.png') })
+
+    console.log('Reloading deck workspace to verify the card persists')
     await page.reload({ waitUntil: 'networkidle' })
-    await page.getByRole('heading', { name: 'No cards in this deck yet.' }).waitFor()
+    await waitForMetricValue(page, 'Cards stored', '1')
+    await page.getByRole('link', { name: 'Edit obscure' }).waitFor()
 
-    await page.waitForFunction(async () => {
-      if (!('serviceWorker' in navigator)) {
-        return false
-      }
+    console.log('Waiting for PWA service worker')
+    await waitForServiceWorker(page)
 
-      try {
-        await navigator.serviceWorker.ready
-        return true
-      } catch {
-        return false
-      }
-    })
+    console.log('Running core flashcards study flow')
+    await page.getByRole('link', { name: 'Start study' }).click()
+    await page.getByRole('heading', { name: 'obscure' }).waitFor()
+    await page.screenshot({ path: join(outputDir, 'study-session-online.png') })
 
-    await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller))
+    await page.getByRole('button', { name: 'Show answer' }).click()
+    await page.getByText('hidden or difficult to understand').waitFor()
+    await page.getByRole('button', { name: 'Good' }).click()
+    await page.getByRole('heading', { name: 'Study queue complete for now' }).waitFor()
+    await page.getByRole('heading', { name: 'Last rating result' }).waitFor()
+    await page.getByText('Saved locally', { exact: true }).waitFor()
+    await page.screenshot({ path: join(outputDir, 'study-session-complete.png') })
 
+    console.log('Reloading study route to verify the saved result survives refresh')
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByRole('heading', { name: 'Study queue complete for now' }).waitFor()
+    await page.getByRole('button', { name: 'Refresh queue' }).waitFor()
+
+    await page.getByRole('link', { name: 'Back to deck' }).click()
+    await page.getByRole('heading', { name: 'English' }).waitFor()
+    await waitForMetricValue(page, 'Reviews today', '1')
+    await waitForMetricValue(page, 'Cards stored', '1')
+    await page.getByRole('link', { name: 'Edit obscure' }).waitFor()
+
+    console.log('Reloading deck workspace offline')
     await context.setOffline(true)
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await page.getByRole('heading', { name: 'No cards in this deck yet.' }).waitFor()
+    await page.getByRole('heading', { name: 'English' }).waitFor()
+    await waitForMetricValue(page, 'Reviews today', '1')
+    await waitForMetricValue(page, 'Cards stored', '1')
+    await page.getByRole('link', { name: 'Edit obscure' }).waitFor()
     await page.screenshot({ path: join(outputDir, 'deck-details-offline.png') })
 
     await context.setOffline(false)
 
+    console.log('Editing and deleting deck to preserve existing CRUD coverage')
     await page.getByRole('link', { name: 'Edit deck' }).click()
     await page.getByLabel('Deck name').fill('English Updated')
     await page.getByRole('button', { name: 'Save changes' }).click()
@@ -153,7 +208,7 @@ async function main() {
 
     page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Delete English Updated' }).click()
-    await page.getByRole('heading', { name: 'No decks yet' }).waitFor()
+    await page.getByRole('heading', { name: 'No decks yet on this device.' }).waitFor()
 
     await browser.close()
 
