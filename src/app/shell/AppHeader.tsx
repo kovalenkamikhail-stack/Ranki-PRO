@@ -11,11 +11,14 @@ import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button-variants'
 import { cn } from '@/lib/utils'
 
-const navItems = [
+const primaryNavItems = [
   { to: '/', label: 'Decks', icon: LibraryBig },
+  { to: '/settings', label: 'Settings', icon: Cog },
+] as const
+
+const extraNavItems = [
   { to: '/reading', label: 'Reading', icon: BookText },
   { to: '/statistics', label: 'Statistics', icon: BarChart3 },
-  { to: '/settings', label: 'Settings', icon: Cog },
 ] as const
 
 export function AppHeader() {
@@ -37,19 +40,20 @@ export function AppHeader() {
 
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Calm study, local reading, and personal insight that stay with you offline.
+                Deck-first flashcards for calm daily review that stay with you offline.
               </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Decks, reading notes, imported books, and study activity now
-                persist on this device without sync or cloud dependencies.
+                Build decks, study one deck at a time, and keep your progress
+                local to this device. Reading tools and statistics remain
+                available as extras without replacing the MVP core flow.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <nav className="flex flex-wrap gap-2">
-            {navItems.map(({ to, label, icon: Icon }) => (
+        <div className="flex flex-col gap-3 sm:items-end">
+          <nav aria-label="Primary navigation" className="flex flex-wrap gap-2">
+            {primaryNavItems.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -68,6 +72,32 @@ export function AppHeader() {
               </NavLink>
             ))}
           </nav>
+
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <span className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+              Extras
+            </span>
+            <nav aria-label="Extras navigation" className="flex flex-wrap gap-2">
+              {extraNavItems.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) =>
+                    cn(
+                      buttonVariants({
+                        variant: isActive ? 'secondary' : 'ghost',
+                        size: 'sm',
+                      }),
+                      'rounded-full px-4',
+                    )
+                  }
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Smartphone className="h-4 w-4" />

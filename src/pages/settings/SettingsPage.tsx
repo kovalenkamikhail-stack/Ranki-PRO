@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -390,10 +391,14 @@ export function SettingsPage() {
             <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
               <Upload className="h-6 w-6" />
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">Optional extra</Badge>
+            </div>
             <CardTitle>Import Anki package</CardTitle>
             <CardDescription>
-              Load a local `.apkg` deck into Ranki so we can test the product on
-              real card volume without leaving the offline-first flow.
+              Load a local `.apkg` deck into Ranki when you need extra card
+              volume on this device. Decks, manual cards, and deck-scoped study
+              still define the MVP core flow.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -461,6 +466,7 @@ export function SettingsPage() {
               </label>
 
               <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
+                This importer is a side utility for local testing and migration.
                 For the current English Template import, Ranki preserves the
                 expression, cleaned meaning, sentence translation, one sentence
                 of context, and one back image when present. Audio, source
