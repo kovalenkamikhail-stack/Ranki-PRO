@@ -71,8 +71,20 @@ export function getElementText(element: Element | null | undefined) {
 }
 
 export function parseHtmlDocument(source: string, description: string) {
+  const normalizedSource = source.trimStart()
+
+  try {
+    const xmlDocument = parseXmlDocument(normalizedSource, description)
+
+    if (getFirstElementByLocalName(xmlDocument, 'body')) {
+      return xmlDocument
+    }
+  } catch {
+    // Fall back to HTML parsing for looser markup that is not well-formed XML/XHTML.
+  }
+
   const document = new DOMParser().parseFromString(
-    source.trimStart(),
+    normalizedSource.replace(/^<\?xml[^>]*>\s*/i, ''),
     'text/html',
   )
 
@@ -189,8 +201,9 @@ export function getHtmlChapterTitle(
     return firstHeading.text
   }
 
-  const documentTitle =
-    normalizeWhitespace(chapterDocument.querySelector('title')?.textContent ?? '')
+  const documentTitle = getElementText(
+    getFirstElementByLocalName(chapterDocument, 'title'),
+  )
 
   if (documentTitle) {
     return documentTitle
