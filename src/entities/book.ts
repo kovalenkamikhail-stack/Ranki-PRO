@@ -1,4 +1,14 @@
-export type ImportedBookFormat = 'epub'
+export type ImportedBookFormat = 'epub' | 'fb2' | 'mobi'
+
+export const IMPORTED_BOOK_FORMAT_LABELS: Record<ImportedBookFormat, string> = {
+  epub: 'EPUB',
+  fb2: 'FB2',
+  mobi: 'MOBI',
+}
+
+export function formatImportedBookFormat(format: ImportedBookFormat) {
+  return IMPORTED_BOOK_FORMAT_LABELS[format]
+}
 
 export type BookContentBlock =
   | {

@@ -1,15 +1,15 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BookLibraryPage } from '@/pages/reading/BookLibraryPage'
 
 const {
   bootstrapAppDbMock,
-  importEpubBookMock,
+  importBookMock,
   listBooksMock,
 } = vi.hoisted(() => ({
   bootstrapAppDbMock: vi.fn(),
-  importEpubBookMock: vi.fn(),
+  importBookMock: vi.fn(),
   listBooksMock: vi.fn(),
 }))
 
@@ -18,7 +18,7 @@ vi.mock('@/db/bootstrap', () => ({
 }))
 
 vi.mock('@/db/books', () => ({
-  importEpubBook: importEpubBookMock,
+  importBook: importBookMock,
   listBooks: listBooksMock,
 }))
 
@@ -45,7 +45,7 @@ function renderBookLibraryPage() {
 describe('BookLibraryPage', () => {
   beforeEach(() => {
     bootstrapAppDbMock.mockReset()
-    importEpubBookMock.mockReset()
+    importBookMock.mockReset()
     listBooksMock.mockReset()
     bootstrapAppDbMock.mockResolvedValue(undefined)
   })
@@ -63,27 +63,25 @@ describe('BookLibraryPage', () => {
 
     expect(screen.getByText('Loading book library')).toBeInTheDocument()
     expect(
-      screen.queryByText('Import the first EPUB to try the optional book-reader path.'),
+      screen.queryByText('Import the first book to try the optional reader path.'),
     ).not.toBeInTheDocument()
 
     resolveBooks?.([])
 
     expect(
-      await screen.findByText(
-        'Import the first EPUB to try the optional book-reader path.',
-      ),
+      await screen.findByText('Import the first book to try the optional reader path.'),
     ).toBeInTheDocument()
   })
 
-  it('imports an epub book from disk and navigates into the dedicated reader', async () => {
+  it('imports a local book from disk and navigates into the dedicated reader', async () => {
     listBooksMock.mockResolvedValue([])
-    importEpubBookMock.mockResolvedValue({
+    importBookMock.mockResolvedValue({
       book: {
         id: 'book-1',
         title: 'Imported Book',
         author: 'Test Author',
-        format: 'epub',
-        fileName: 'book.epub',
+        format: 'fb2',
+        fileName: 'book.fb2',
         sourceBlobRef: 'book-blob:1',
         chapterCount: 2,
         totalWordCount: 1200,
@@ -98,30 +96,57 @@ describe('BookLibraryPage', () => {
 
     renderBookLibraryPage()
 
-    await screen.findByText('Import EPUB book (optional)')
+    await screen.findByText('Import book')
 
-    const file = new File(['epub-binary'], 'book.epub', {
-      type: 'application/epub+zip',
+    const file = new File(['fb2-binary'], 'book.fb2', {
+      type: 'text/xml',
     })
-    fireEvent.change(screen.getByLabelText('Import EPUB book'), {
+    fireEvent.change(screen.getByLabelText('Import book'), {
       target: { files: [file] },
     })
 
     await waitFor(() => {
-      expect(importEpubBookMock).toHaveBeenCalledWith(file)
+      expect(importBookMock).toHaveBeenCalledWith(file)
     })
 
     expect(await screen.findByText('Book reader destination')).toBeInTheDocument()
   })
 
-  it('shows imported books in the library with an open-book action', async () => {
+  it('keeps the empty-state CTA stack readable on narrow layouts', async () => {
+    listBooksMock.mockResolvedValue([])
+
+    renderBookLibraryPage()
+
+    const emptyStateHeading = await screen.findByRole('heading', {
+      name: 'Import the first book to try the optional reader path.',
+    })
+    const emptyStateCard = emptyStateHeading.parentElement
+
+    expect(emptyStateCard).not.toBeNull()
+
+    const emptyState = within(emptyStateCard as HTMLElement)
+    const importButton = emptyState.getByRole('button', { name: 'Import book' })
+    const openReadingToolsLink = emptyState.getByRole('link', {
+      name: 'Open reading tools',
+    })
+    const backToDecksLink = emptyState.getByRole('link', { name: 'Back to decks' })
+    const actionStack = importButton.parentElement
+
+    expect(actionStack).not.toBeNull()
+    expect(actionStack).toHaveClass('flex-col', 'sm:flex-row', 'sm:flex-wrap')
+    expect(importButton).toHaveClass('w-full', 'sm:w-auto')
+    expect(openReadingToolsLink).toHaveClass('w-full', 'sm:w-auto')
+    expect(backToDecksLink).toHaveClass('w-full', 'sm:w-auto')
+  })
+
+  it('shows imported books in the library with their actual format badges', async () => {
     listBooksMock.mockResolvedValue([
       {
         id: 'book-1',
         title: 'Imported Book',
         author: 'Test Author',
-        format: 'epub',
-        fileName: 'book.epub',
+        format: 'mobi',
+        fileName: 'book.mobi',
         sourceBlobRef: 'book-blob:1',
         chapterCount: 2,
         totalWordCount: 1200,
@@ -142,6 +167,7 @@ describe('BookLibraryPage', () => {
       'href',
       '/',
     )
+    expect(screen.getByText('MOBI')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Resume book Imported Book' }),
     ).toHaveAttribute('href', '/reading/books/book-1')

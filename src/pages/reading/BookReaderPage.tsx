@@ -25,7 +25,12 @@ import {
   saveBookProgress,
 } from '@/db/books'
 import { bootstrapAppDb } from '@/db/bootstrap'
-import type { Book, BookChapter, BookContentBlock } from '@/entities/book'
+import {
+  formatImportedBookFormat,
+  type Book,
+  type BookChapter,
+  type BookContentBlock,
+} from '@/entities/book'
 import { cn } from '@/lib/utils'
 
 const timestampFormatter = new Intl.DateTimeFormat(undefined, {
@@ -121,7 +126,7 @@ function renderBookBlock(block: BookContentBlock, key: string) {
     return (
       <p
         key={key}
-        className="pl-6 text-[1.03rem] leading-8 text-foreground before:mr-3 before:inline-block before:content-['•']"
+        className="pl-6 text-[1.03rem] leading-8 text-foreground before:mr-3 before:inline-block before:content-['*']"
       >
         {block.text}
       </p>
@@ -355,7 +360,7 @@ function BookReaderWorkspace({ bookId }: { bookId: string }) {
         <CardHeader>
           <CardTitle>Loading book reader</CardTitle>
           <CardDescription>
-            Opening the imported EPUB from IndexedDB.
+            Opening the imported book from IndexedDB.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -386,14 +391,16 @@ function BookReaderWorkspace({ bookId }: { bookId: string }) {
     )
   }
 
+  const formatLabel = formatImportedBookFormat(book.format)
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
       <Card className="overflow-hidden">
         <CardHeader className="gap-4 border-b border-border/50 bg-card/72">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="accent">Optional extra</Badge>
-            <Badge variant="outline">Experimental EPUB reader</Badge>
-            <Badge variant="outline">EPUB</Badge>
+            <Badge variant="outline">Experimental book reader</Badge>
+            <Badge variant="outline">{formatLabel}</Badge>
             <Badge variant="outline">Saved on this device</Badge>
           </div>
 
@@ -401,7 +408,7 @@ function BookReaderWorkspace({ bookId }: { bookId: string }) {
             <CardTitle className="text-3xl sm:text-4xl">{book.title}</CardTitle>
             <CardDescription className="max-w-2xl text-base">
               {book.author
-                ? `${book.author} · ${book.chapterCount} ${book.chapterCount === 1 ? 'chapter' : 'chapters'}`
+                ? `${book.author} · ${book.chapterCount} ${book.chapterCount === 1 ? 'chapter' : 'chapters'} · ${formatLabel}`
                 : `${book.chapterCount} ${book.chapterCount === 1 ? 'chapter' : 'chapters'} saved locally from ${book.fileName}.`}
             </CardDescription>
           </div>
@@ -507,7 +514,7 @@ function BookReaderWorkspace({ bookId }: { bookId: string }) {
         <CardHeader>
           <CardTitle>Book context</CardTitle>
           <CardDescription>
-            Local reader state for this imported EPUB.
+            Local reader state for this imported {formatLabel} book.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -577,8 +584,8 @@ function BookReaderWorkspace({ bookId }: { bookId: string }) {
             <div className="flex items-start gap-3">
               <LibraryBig className="mt-0.5 h-4 w-4 flex-none text-primary" />
               <p>
-                This first slice intentionally favors safe, text-first EPUB
-                reading over CSS-fidelity or inline asset support.
+                This slice intentionally favors safe, text-first reading across
+                EPUB, FB2, and MOBI over CSS-fidelity or inline asset support.
               </p>
             </div>
           </div>

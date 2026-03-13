@@ -2,7 +2,7 @@ import Dexie from 'dexie'
 import { appDb, type RankiDb } from '@/db/app-db'
 import type { Book, BookChapter } from '@/entities/book'
 import type { MediaBlob } from '@/entities/media-blob'
-import { parseEpubFile } from '@/importers/epub'
+import { parseBookFile } from '@/importers/book'
 import { createId } from '@/lib/ids'
 import { nowMs } from '@/lib/time'
 
@@ -65,11 +65,11 @@ export async function getBookWithChapters(
   }
 }
 
-export async function importEpubBook(
+export async function importBook(
   file: File,
   database: RankiDb = appDb,
 ) {
-  const parsedBook = await parseEpubFile(file)
+  const parsedBook = await parseBookFile(file)
 
   return database.transaction(
     'rw',

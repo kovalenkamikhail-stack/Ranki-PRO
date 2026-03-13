@@ -163,11 +163,11 @@ function ReadingLibraryIntro({
         </div>
 
         <div className="rounded-[1.4rem] border border-primary/20 bg-primary/5 p-4">
-          <p className="font-medium text-foreground">Also available: local EPUB books</p>
+          <p className="font-medium text-foreground">Also available: local books</p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Open the separate optional book library to import EPUB files and
-            continue in the dedicated reader without affecting your saved
-            reading notes or the core deck workflow.
+            Open the separate optional book library to import EPUB, FB2, or
+            MOBI files and continue in the dedicated reader without affecting
+            your saved reading notes or the core deck workflow.
           </p>
         </div>
 
