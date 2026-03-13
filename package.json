@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "playwright:install": "playwright install chromium",
     "smoke:pwa": "pnpm build && node ./scripts/pwa-smoke.mjs",
+    "smoke:reading": "pnpm build && node ./scripts/reading-smoke.mjs",
+    "smoke:statistics": "pnpm build && node ./scripts/statistics-smoke.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
