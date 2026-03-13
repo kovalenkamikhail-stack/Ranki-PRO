@@ -19,9 +19,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { bootstrapAppDb } from '@/db/bootstrap'
-import { importEpubBook, listBooks } from '@/db/books'
-import type { Book } from '@/entities/book'
-import { EPUB_INPUT_ACCEPT } from '@/importers/epub'
+import { importBook, listBooks } from '@/db/books'
+import { formatImportedBookFormat, type Book } from '@/entities/book'
+import { BOOK_INPUT_ACCEPT } from '@/importers/book'
 
 const timestampFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -101,14 +101,14 @@ export function BookLibraryPage() {
     setError(null)
 
     try {
-      const imported = await importEpubBook(selectedFile)
+      const imported = await importBook(selectedFile)
       setBooks((currentBooks) => [imported.book, ...currentBooks])
       navigate(`/reading/books/${imported.book.id}`)
     } catch (nextError: unknown) {
       setError(
         nextError instanceof Error
           ? nextError.message
-          : 'Failed to import the EPUB book.',
+          : 'Failed to import the book.',
       )
     } finally {
       setIsImporting(false)
@@ -124,8 +124,8 @@ export function BookLibraryPage() {
           <CardHeader className="gap-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="accent">Optional extra</Badge>
-              <Badge variant="outline">Experimental EPUB reader</Badge>
-              <Badge variant="outline">EPUB foundation</Badge>
+              <Badge variant="outline">Experimental book reader</Badge>
+              <Badge variant="outline">Multi-format import</Badge>
             </div>
 
             <div className="space-y-3">
@@ -133,9 +133,9 @@ export function BookLibraryPage() {
                 Import real books and keep them readable offline.
               </CardTitle>
               <CardDescription className="max-w-2xl text-base">
-                This extra keeps local EPUB import, a dedicated reader view, and
-                saved reading position available on this device without
-                displacing the deck-first MVP flow.
+                This extra keeps local EPUB, FB2, and MOBI import in the same
+                text-first reader with saved reading position on this device
+                without displacing the deck-first MVP flow.
               </CardDescription>
             </div>
           </CardHeader>
@@ -156,11 +156,11 @@ export function BookLibraryPage() {
 
               <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  First format
+                  Formats
                 </p>
-                <p className="mt-2 text-xl font-semibold">EPUB</p>
+                <p className="mt-2 text-xl font-semibold">EPUB / FB2 / MOBI</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Non-DRM EPUB 2/3 in this slice.
+                  Text-first, non-DRM import in one library.
                 </p>
               </div>
 
@@ -184,7 +184,7 @@ export function BookLibraryPage() {
                 className="w-full sm:w-auto"
               >
                 <Upload className="mr-2 h-4 w-4" />
-                {isImporting ? 'Importing EPUB...' : 'Import EPUB book (optional)'}
+                {isImporting ? 'Importing book...' : 'Import book'}
               </Button>
               <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
                 <Link to="/reading">Open reading tools</Link>
@@ -198,17 +198,17 @@ export function BookLibraryPage() {
             </div>
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
-              Deferred on purpose for this first book-reader slice: PDF, MOBI,
-              FB2, annotations, highlights, sync, and card generation.
+              Deferred on purpose for this reader slice: PDF, annotations,
+              highlights, sync, search, TTS, and card generation.
             </div>
 
             <input
               ref={importInputRef}
               type="file"
-              accept={EPUB_INPUT_ACCEPT}
+              accept={BOOK_INPUT_ACCEPT}
               onChange={(event) => void handleImportChange(event)}
               className="hidden"
-              aria-label="Import EPUB book"
+              aria-label="Import book"
             />
           </CardContent>
         </Card>
@@ -217,7 +217,7 @@ export function BookLibraryPage() {
           <CardHeader>
             <CardTitle>Import rules</CardTitle>
             <CardDescription>
-              Keep the first slice explicit and predictable.
+              Keep the reader slice explicit and predictable.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -238,10 +238,11 @@ export function BookLibraryPage() {
             </div>
 
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="font-medium">One real format first</p>
+              <p className="font-medium">One reader, multiple formats</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                EPUB is the first-class format here because it gives us a real
-                reflowable book reader without forcing a PDF-style viewer.
+                EPUB, FB2, and MOBI all normalize into the same safe content
+                blocks instead of introducing format-specific viewers or raw
+                HTML rendering in the UI.
               </p>
             </div>
           </CardContent>
@@ -300,7 +301,7 @@ export function BookLibraryPage() {
               className="w-full sm:w-auto"
             >
               <Upload className="mr-2 h-4 w-4" />
-              {isImporting ? 'Importing EPUB...' : 'Import another EPUB'}
+              {isImporting ? 'Importing book...' : 'Import another book'}
             </Button>
           </div>
 
@@ -312,7 +313,9 @@ export function BookLibraryPage() {
                 <Card key={book.id} className="h-full overflow-hidden">
                   <CardHeader className="gap-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="accent">EPUB</Badge>
+                      <Badge variant="accent">
+                        {formatImportedBookFormat(book.format)}
+                      </Badge>
                       <Badge variant="outline">
                         {book.chapterCount}{' '}
                         {book.chapterCount === 1 ? 'chapter' : 'chapters'}
@@ -375,22 +378,27 @@ export function BookLibraryPage() {
                 <LibraryBig className="h-6 w-6" />
               </div>
               <h2 className="text-2xl font-semibold tracking-tight">
-                Import the first EPUB to try the optional book-reader path.
+                Import the first book to try the optional reader path.
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                Choose a local non-DRM EPUB book from disk. Ranki will extract a
-                text-first chapter flow, store it offline, and reopen the book
-                from the last saved reading position later.
+                Choose a local non-DRM EPUB, FB2, or MOBI book from disk.
+                Ranki will extract a text-first chapter flow, store it offline,
+                and reopen the book from the last saved reading position later.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Button type="button" onClick={handleImportClick} disabled={isImporting}>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button
+                  type="button"
+                  onClick={handleImportClick}
+                  disabled={isImporting}
+                  className="w-full sm:w-auto"
+                >
                   <Upload className="mr-2 h-4 w-4" />
-                  {isImporting ? 'Importing EPUB...' : 'Import EPUB book (optional)'}
+                  {isImporting ? 'Importing book...' : 'Import book'}
                 </Button>
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" className="w-full sm:w-auto">
                   <Link to="/reading">Open reading tools</Link>
                 </Button>
-                <Button asChild variant="ghost">
+                <Button asChild variant="ghost" className="w-full sm:w-auto">
                   <Link to="/">Back to decks</Link>
                 </Button>
               </div>

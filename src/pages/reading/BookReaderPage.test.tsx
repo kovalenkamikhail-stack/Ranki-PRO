@@ -46,8 +46,8 @@ const snapshot = {
     id: 'book-1',
     title: 'Imported Book',
     author: 'Test Author',
-    format: 'epub',
-    fileName: 'book.epub',
+    format: 'fb2',
+    fileName: 'book.fb2',
     sourceBlobRef: 'book-blob:1',
     chapterCount: 2,
     totalWordCount: 1200,
@@ -63,13 +63,13 @@ const snapshot = {
       bookId: 'book-1',
       chapterIndex: 0,
       title: 'Chapter One',
-      sourceHref: 'chapter-1.xhtml',
+      sourceHref: 'chapter-1',
       wordCount: 600,
       blocks: [
         { type: 'heading' as const, text: 'Chapter One', level: 1 },
         {
           type: 'paragraph' as const,
-          text: 'First paragraph from the imported EPUB chapter.',
+          text: 'First paragraph from the imported book chapter.',
         },
       ],
       createdAt: 50,
@@ -79,13 +79,13 @@ const snapshot = {
       bookId: 'book-1',
       chapterIndex: 1,
       title: 'Chapter Two',
-      sourceHref: 'chapter-2.xhtml',
+      sourceHref: 'chapter-2',
       wordCount: 600,
       blocks: [
         { type: 'heading' as const, text: 'Chapter Two', level: 2 },
         {
           type: 'paragraph' as const,
-          text: 'Second chapter text from the imported EPUB.',
+          text: 'Second chapter text from the imported book.',
         },
       ],
       createdAt: 50,
@@ -122,6 +122,7 @@ describe('BookReaderPage', () => {
       await screen.findByRole('heading', { name: 'Imported Book' }),
     ).toBeInTheDocument()
     expect(markBookOpenedMock).toHaveBeenCalledWith('book-1')
+    expect(screen.getByText('FB2')).toBeInTheDocument()
     expect(screen.getByText('Chapter One')).toBeInTheDocument()
     expect(screen.getByText('35%')).toBeInTheDocument()
 
@@ -153,11 +154,15 @@ describe('BookReaderPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Imported Book' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('First paragraph from the imported EPUB chapter.')).toBeInTheDocument()
+    expect(
+      screen.getByText('First paragraph from the imported book chapter.'),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Next chapter' }))
 
-    expect(await screen.findByText('Second chapter text from the imported EPUB.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Second chapter text from the imported book.'),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Previous chapter' })).toBeEnabled()
   })
 })

@@ -7,12 +7,21 @@ const VALID_EPUB_BASE64 =
 const INVALID_EPUB_BASE64 =
   'UEsDBBQAAAAIANIRaVwCqdJqrgAAAPsAAAAWAAAATUVUQS1JTkYvY29udGFpbmVyLnhtbF2OwQrCMBBE735F2Ku01ZuEpgVBrwrqB8R0W4PpbmhS0b837UGKx4GZ96as370TLxyCZVKwzTcgkAw3ljoFt+sx20FdrUrDFLUlHP66aU1BwTiQZB1skKR7DDIayR6pYTP2SFHONfmDQLUSohyYY2sdhiktsmhH5zKv40PB6bA/X4ppmDA5+xZEj43VWfx4VKC9d9bomA4VjHcf0sw8dYfrZIRi1hQLTzmj5g/VF1BLAwQUAAAACADSEWlcRAwrldsAAABnAQAAEQAAAE9FQlBTL2NvbnRlbnQub3BmTdBNTsMwEAXgfU9hed9MAgtQZKcSEpwADmDZk9Sq/xQPpLk9bupAl3567xvJ4nT1jv3gnG0MkndNyxkGHY0Nk+Rfnx/HV34aDiIpfVETstIOWfIzUeoBlmVprEljE+cJntr2BWIa+T/3XLjhwJjwSMooUvd9b/Qfkb5nt82NBnToMVCGrulgG5ap0T1Zcji8+0Qre4vxIkq5hjccdv1+SgU7YqY6t4SeWSN5ptVh5uw847i/Gp1L4tFYdaQ1oeSEV4JbCpV+0ERONmwnq1ukQj94+6oWBdRvG34BUEsBAhQAFAAAAAgA0hFpXAKp0mquAAAA+wAAABYAAAAAAAAAAAAAAAAAAAAAAE1FVEEtSU5GL2NvbnRhaW5lci54bWxQSwECFAAUAAAACADSEWlcRAwrldsAAABnAQAAEQAAAAAAAAAAAAAAAADiAAAAT0VCUFMvY29udGVudC5vcGZQSwUGAAAAAAIAAgCDAAAA7AEAAAAA'
 
+const REGRESSION_EPUB_BASE64 =
+  'UEsDBBQAAAAIALNhbVxvYassFgAAABQAAAAIAAAAbWltZXR5cGVLLCjIyUxOLMnMz9NPLShN0q7KLAAAUEsDBBQAAAAIALNhbVxXuJqXrQAAAPwAAAAWAAAATUVUQS1JTkYvY29udGFpbmVyLnhtbF2OzQrCMBCE732KsFdpqzcJ/QHBs4JPENNtDaa7IUlF3940BykeB2a+b5r+PVvxQh8MUwuHag8CSfNgaGphiWN5hL4rGs0UlSH0f920ppCKniSrYIIkNWOQUUt2SAPrZUaKMtfkDwJdIUTjmeNoLIY1bbIYF2tLp+Kjhcv5dL3V6zBhKnYjiBkHo8r4cdiCcs4arWI6VDPeXUgz/VQT7pIRRJ099UbUZFY+0X0BUEsDBBQAAAAIALNhbVz/JhJpIgEAAOUBAAARAAAAT0VCUFMvY29udGVudC5vcGZNkcFOwzAQRO98xcpXlLiFAyg0kQoSolJbeuihVxNvGqtxYuwNDX/PNqRpjh7vzLy1F40rEqfykzoidLaqQ8JKKkoil0h5Pp9jo10RN/4oH2azJ8m3An7QB9PUqXiMZwLa2ny3GBmNNZnCoE/FV9OcWBDZHUBfYZGUVqSGDp2PFa71VR+vc4kVWg4Jch7PZW9mu84TMlRhtlUWA7MivHL8gg3DxTiXe1TU+GynfEAP76brp67yBeaywEhzw1O1KTDQEHWRDKEFo1ORl8oR+mguoPTIb0PYkRzVuCvJVgIsaqMi+nWYCljuduvV23K/+tzKw8d+s74/bNbwAuxiMkpbKqJnECAnTBOEHiA4U193uwJxPzP1FBOsScpg+j8M/5r9AVBLAwQUAAAACACzYW1c9qRaF5cAAADMAAAAGgAAAE9FQlBTL3RleHQvY2hhcHRlci0xLnhodG1sbY5NDsIgEIWvMukBShpXNcjCRJfahR4Ay9ghgUJgKvX20nTrZhbzvvcjib2D1bs5nxpijkchSiltObQhTaLr+16sG9MoSaiNkmzZobppjznqEQ2MpCNjkmJXpNi5VzDf6un+ovUto3qQzXAZnmfIFBZnwPoYEgN+cIZC9TAh3IcrLBkzxIRvu9YY1lNupYi1a28R20L1A1BLAQIUABQAAAAIALNhbVxvYassFgAAABQAAAAIAAAAAAAAAAAAAAAAAAAAAABtaW1ldHlwZVBLAQIUABQAAAAIALNhbVxXuJqXrQAAAPwAAAAWAAAAAAAAAAAAAAAAADwAAABNRVRBLUlORi9jb250YWluZXIueG1sUEsBAhQAFAAAAAgAs2FtXP8mEmkiAQAA5QEAABEAAAAAAAAAAAAAAAAAHQEAAE9FQlBTL2NvbnRlbnQub3BmUEsBAhQAFAAAAAgAs2FtXPakWheXAAAAzAAAABoAAAAAAAAAAAAAAAAAbgIAAE9FQlBTL3RleHQvY2hhcHRlci0xLnhodG1sUEsFBgAAAAAEAAQAAQEAAD0DAAAAAA=='
+
 function decodeBase64(base64: string) {
   return Uint8Array.from(atob(base64), (character) => character.charCodeAt(0))
 }
 
 function createTestEpubFile() {
   return new File([decodeBase64(VALID_EPUB_BASE64)], 'test-book.epub', {
+    type: 'application/epub+zip',
+  })
+}
+
+function createRegressionEpubFile() {
+  return new File([decodeBase64(REGRESSION_EPUB_BASE64)], 'generated-book.epub', {
     type: 'application/epub+zip',
   })
 }
@@ -54,6 +63,23 @@ describe('parseEpubFile', () => {
 
     await expect(parseEpubFile(invalidFile)).rejects.toThrow(
       'No readable EPUB chapters were found.',
+    )
+  })
+
+  it('accepts valid EPUB package documents that use OPF prefixes and normalized media types', async () => {
+    const parsed = await parseEpubFile(createRegressionEpubFile())
+
+    expect(parsed.title).toBe('Namespace Book')
+    expect(parsed.author).toBe('Parser Fix')
+    expect(parsed.chapters).toHaveLength(1)
+    expect(parsed.chapters[0]?.title).toBe('Namespaced chapter')
+    expect(parsed.chapters[0]?.blocks).toEqual(
+      expect.arrayContaining([
+        {
+          type: 'paragraph',
+          text: 'This EPUB should import even when the OPF uses prefixed tags.',
+        },
+      ]),
     )
   })
 })

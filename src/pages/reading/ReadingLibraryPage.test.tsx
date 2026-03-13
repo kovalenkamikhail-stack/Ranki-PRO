@@ -148,6 +148,7 @@ describe('ReadingLibraryPage', () => {
     expect(
       await screen.findByRole('link', { name: 'Open book library' }),
     ).toHaveAttribute('href', '/reading/books')
+    expect(screen.getByText(/EPUB, FB2, or MOBI/)).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: 'Back to decks' }).length).toBeGreaterThan(0)
   })
 })
