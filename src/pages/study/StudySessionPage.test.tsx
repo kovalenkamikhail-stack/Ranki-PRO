@@ -413,6 +413,9 @@ describe('StudySessionPage', () => {
     ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Show answer' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Hard' })).toBeInTheDocument()
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Hard' }))
 
     expect(

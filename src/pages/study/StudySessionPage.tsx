@@ -11,7 +11,7 @@ import {
   RotateCcw,
   Sparkles,
 } from 'lucide-react'
-import { type ReactNode, useEffect, useEffectEvent, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CardBackImage } from '@/components/cards/CardBackImage'
 import { Badge } from '@/components/ui/badge'
@@ -400,28 +400,65 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
   const [submittingRating, setSubmittingRating] = useState<ReviewRating | null>(
     null,
   )
+  const sessionRequestIdRef = useRef(0)
   const previewCard = session?.currentCard ?? null
   const waitingNextDueAt =
     session?.currentCard || session?.nextDueAt === null
       ? null
       : session?.nextDueAt
 
-  const commitLoadedSession = useEffectEvent(
-    (nextSession: DeckStudySessionSnapshot | null) => {
-      if (!nextSession) {
-        setSession(null)
-        setIsMissing(true)
-        return
-      }
+  const beginSessionRequest = () => {
+    sessionRequestIdRef.current += 1
+    return sessionRequestIdRef.current
+  }
 
-      setSession(nextSession)
-      setIsMissing(false)
+  const commitLoadedSession = (
+    nextSession: DeckStudySessionSnapshot | null,
+    requestId: number,
+  ) => {
+    if (requestId !== sessionRequestIdRef.current) {
+      return
+    }
+
+    setIsLoading(false)
+    setIsRefreshingSession(false)
+    setActionError(null)
+
+    if (!nextSession) {
+      setSession(null)
+      setIsMissing(true)
       setLoadError(null)
-    },
-  )
+      return
+    }
+
+    setSession(nextSession)
+    setIsMissing(false)
+    setLoadError(null)
+  }
+
+  const commitSessionLoadError = (
+    message: string,
+    requestId: number,
+    type: 'load' | 'action',
+  ) => {
+    if (requestId !== sessionRequestIdRef.current) {
+      return
+    }
+
+    setIsLoading(false)
+    setIsRefreshingSession(false)
+
+    if (type === 'load') {
+      setLoadError(message)
+      return
+    }
+
+    setActionError(message)
+  }
 
   useEffect(() => {
     let isMounted = true
+    const requestId = beginSessionRequest()
 
     setIsLoading(true)
     setIsMissing(false)
@@ -432,21 +469,18 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
     void loadDeckStudySession(deckId)
       .then((nextSession) => {
         if (isMounted) {
-          commitLoadedSession(nextSession)
+          commitLoadedSession(nextSession, requestId)
         }
       })
       .catch((nextError: unknown) => {
         if (isMounted) {
-          setLoadError(
+          commitSessionLoadError(
             nextError instanceof Error
               ? nextError.message
               : 'Failed to load study session.',
+            requestId,
+            'load',
           )
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false)
         }
       })
 
@@ -463,7 +497,7 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
   useEffect(() => {
     let isMounted = true
 
-    if (!previewCard?.backImageAssetId) {
+    if (!isAnswerRevealed || !previewCard?.backImageAssetId) {
       setCurrentBackImage(null)
       setIsBackImageLoading(false)
       return () => {
@@ -496,7 +530,7 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
     return () => {
       isMounted = false
     }
-  }, [previewCard])
+  }, [isAnswerRevealed, previewCard])
 
   useEffect(() => {
     if (!session || session.currentCard || session.nextDueAt === null) {
@@ -505,15 +539,19 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
 
     const delayMs = Math.max(session.nextDueAt - nowMs(), 0)
     const timerId = window.setTimeout(() => {
+      const requestId = beginSessionRequest()
+
       void loadDeckStudySession(deckId)
         .then((nextSession) => {
-          commitLoadedSession(nextSession)
+          commitLoadedSession(nextSession, requestId)
         })
         .catch((nextError: unknown) => {
-          setActionError(
+          commitSessionLoadError(
             nextError instanceof Error
               ? nextError.message
               : 'Failed to refresh the next due card.',
+            requestId,
+            'action',
           )
         })
     }, delayMs)
@@ -568,35 +606,23 @@ function StudySessionWorkspace({ deckId }: { deckId: string }) {
   }
 
   const handleRefreshSession = async () => {
+    const requestId = beginSessionRequest()
+
     setActionError(null)
     setIsRefreshingSession(true)
 
     try {
       const nextSession = await loadDeckStudySession(deckId)
 
-      if (!nextSession) {
-        setSession(null)
-        setIsMissing(true)
-        setLoadError(null)
-        return
-      }
-
-      setSession(nextSession)
-      setIsMissing(false)
-      setLoadError(null)
+      commitLoadedSession(nextSession, requestId)
     } catch (nextError: unknown) {
-      const message =
+      commitSessionLoadError(
         nextError instanceof Error
           ? nextError.message
-          : 'Failed to refresh the study session.'
-
-      if (loadError) {
-        setLoadError(message)
-      } else {
-        setActionError(message)
-      }
-    } finally {
-      setIsRefreshingSession(false)
+          : 'Failed to refresh the study session.',
+        requestId,
+        'action',
+      )
     }
   }
 
