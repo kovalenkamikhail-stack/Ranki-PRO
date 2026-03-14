@@ -15,12 +15,23 @@ const baseUrl = `http://${host}:${port}`
 const previewLogPath = join(outputDir, 'preview.log')
 const consoleLogPath = join(outputDir, 'browser-console.log')
 
+async function fetchWithTimeout(url, timeoutMs = 1_000) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, { signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 async function waitForPreview(url, timeoutMs = 30_000) {
   const startedAt = Date.now()
 
   while (Date.now() - startedAt < timeoutMs) {
     try {
-      const response = await fetch(url)
+      const response = await fetchWithTimeout(url)
       if (response.ok) {
         return
       }
@@ -70,6 +81,7 @@ async function main() {
 
   const previewLog = []
   const browserConsole = []
+  let browser
   const preview = spawn(
     process.platform === 'win32' ? 'cmd.exe' : 'pnpm',
     process.platform === 'win32'
@@ -97,7 +109,7 @@ async function main() {
   try {
     await waitForPreview(baseUrl)
 
-    const browser = await chromium.launch({ headless: true })
+    browser = await chromium.launch({ headless: true })
     const context = await browser.newContext()
     const page = await context.newPage()
     page.setDefaultTimeout(10_000)
@@ -112,12 +124,16 @@ async function main() {
 
     console.log('Opening reading library')
     await page.goto(`${baseUrl}/reading`, { waitUntil: 'networkidle' })
-    await page.getByRole('heading', { name: 'No reading items yet.' }).waitFor()
+    await page
+      .getByRole('heading', {
+        name: 'Your library is ready for the first reading note.',
+      })
+      .waitFor()
 
     console.log('Creating reading item')
     await page.getByLabel('Title').fill('Reading foundation note')
     await page.getByLabel('Reading text').fill(longReadingText)
-    await page.getByRole('button', { name: 'Save and open' }).click()
+    await page.getByRole('button', { name: 'Save and open reader' }).click()
 
     await page.getByRole('heading', { name: 'Reading foundation note' }).waitFor()
     await page.screenshot({ path: join(outputDir, 'reading-view.png') })
@@ -139,7 +155,11 @@ async function main() {
     await page.screenshot({ path: join(outputDir, 'reading-library.png') })
 
     console.log('Reopening reader to verify resume state')
-    await page.getByRole('link', { name: 'Open Reading foundation note' }).click()
+    await page
+      .getByRole('link', {
+        name: 'Resume reading Reading foundation note',
+      })
+      .click()
     await page.getByRole('heading', { name: 'Reading foundation note' }).waitFor()
     await page.waitForTimeout(250)
 
@@ -151,12 +171,12 @@ async function main() {
       throw new Error('Expected reading resume scroll position to be restored.')
     }
 
-    await browser.close()
     await writeFile(previewLogPath, previewLog.join(''), 'utf8')
     await writeFile(consoleLogPath, browserConsole.join('\n'), 'utf8')
 
     console.log(`Reading smoke passed. Artifacts written to ${outputDir}`)
   } finally {
+    await browser?.close().catch(() => undefined)
     await terminatePreview(preview)
   }
 }

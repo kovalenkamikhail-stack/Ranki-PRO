@@ -92,7 +92,7 @@ corepack pnpm smoke:reading
 corepack pnpm smoke:statistics
 ```
 
-These scripts exercise the reading and statistics surfaces against a local preview and store artifacts under `output/playwright/reading-smoke/` and `output/playwright/statistics-smoke/`.
+These commands exercise the reading and statistics surfaces against a local preview and store artifacts under `output/playwright/reading-smoke/` and `output/playwright/statistics-smoke/`.
 
 ## Product Sources
 
