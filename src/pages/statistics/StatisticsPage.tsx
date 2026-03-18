@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { PageIntro, PageScaffold } from '@/app/shell/PageScaffold'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -379,219 +380,215 @@ export function StatisticsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="overflow-hidden">
-          <CardHeader className="gap-5">
-            <div className="flex flex-wrap items-center gap-2">
+    <PageScaffold
+      header={
+        <PageIntro
+          eyebrow="Statistics"
+          title="Statistics"
+          description="See recent study activity from persisted review logs on this device. The page stays descriptive about effort and frequency, not mastery or retention claims, and remains outside the core deck-and-study workflow."
+          badges={
+            <>
               <Badge variant="accent">Optional extra</Badge>
               <Badge variant="outline">Statistics</Badge>
               <Badge variant="outline">Saved review logs only</Badge>
               <Badge variant="outline">Local-first activity</Badge>
-            </div>
-
-            <div className="space-y-3">
-              <CardTitle className="max-w-2xl text-3xl sm:text-4xl">
-                Statistics
-              </CardTitle>
-              <CardDescription className="max-w-2xl text-base">
-                See recent study activity from persisted review logs on this
-                device. The page stays descriptive about effort and frequency,
-                not mastery or retention claims, and remains outside the core
-                deck-and-study workflow.
-              </CardDescription>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Window
-                </p>
-                <p className="mt-2 text-xl font-semibold">Last 7 local days</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Includes today and follows the device local date boundary.
-                </p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Today starts
-                </p>
-                <p className="mt-2 text-base font-semibold">
-                  {statistics ? formatTimestamp(statistics.todayStart) : '...'}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Midnight in the current local timezone.
-                </p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Saved history
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {statistics ? statistics.totalReviewHistoryCount : '...'}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Total review events stored locally.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
-              Every number on this screen comes from saved `reviewLogs`.
-              Nothing is sent to a server, and the page intentionally keeps its
-              claims narrower than the stored data itself.
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button asChild>
-                <Link to="/">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to decks
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link to="/settings">
-                  Open settings
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Window rules</CardTitle>
-            <CardDescription>
-              Keep the definitions explicit so the metrics stay trustworthy when
-              activity is high, low, or quiet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
-            <WindowRule
-              icon={<Clock3 className="h-4 w-4" />}
-              title="Today"
-              description="Counts review logs with `reviewedAt` between local midnight and the next local midnight."
-            />
-            <WindowRule
-              icon={<History className="h-4 w-4" />}
-              title="Last 7 days"
-              description="Uses the last seven local calendar days, including today."
-            />
-            <WindowRule
-              icon={<PieChart className="h-4 w-4" />}
-              title="Rating mix"
-              description="Shows activity by saved rating action, not any inferred learning outcome."
-            />
-          </CardContent>
-        </Card>
-      </section>
-
-      {error ? (
-        <div
-          role="alert"
-          className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
-        >
-          {error}
-        </div>
-      ) : null}
-
-      {isLoading ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Loading statistics</CardTitle>
-            <CardDescription>
-              Reading saved review logs from IndexedDB.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
-              Gathering the latest local activity snapshot.
-            </div>
-          </CardContent>
-        </Card>
-      ) : statistics && !statistics.hasAnyReviewHistory ? (
-        <EmptyStatisticsState />
-      ) : statistics ? (
+            </>
+          }
+        />
+      }
+      actions={
         <>
-          <section className="space-y-4">
-            <SectionHeading
-              title="Recent activity"
-              description="A clear snapshot of what you actually studied on this device, with the quiet periods left visible instead of hidden."
-            />
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile
-                label="Reviews today"
-                value={statistics.reviewsCompletedToday}
-                detail="Saved rating actions completed since local midnight."
-              />
-              <MetricTile
-                label="Cards studied today"
-                value={statistics.cardsStudiedToday}
-                detail="Distinct cards touched by today's saved reviews."
-              />
-              <MetricTile
-                label="Reviews in last 7 days"
-                value={statistics.reviewsCompletedLast7Days}
-                detail="Saved review events in the recent local window."
-              />
-              <MetricTile
-                label="Active decks in last 7 days"
-                value={statistics.activeDeckCountLast7Days}
-                detail="Decks with at least one saved review in the recent window."
-              />
+          <Button asChild>
+            <Link to="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to decks
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/settings">
+              Open settings
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </>
+      }
+      list={
+        <>
+          {error ? (
+            <div
+              role="alert"
+              className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
+            >
+              {error}
             </div>
-          </section>
+          ) : null}
 
-          {!statistics.hasRecentActivity ? <RecentWindowQuietState /> : null}
-
-          <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          {isLoading ? (
             <Card>
               <CardHeader>
-                <CardTitle>Rating distribution</CardTitle>
+                <CardTitle>Loading statistics</CardTitle>
                 <CardDescription>
-                  Saved rating actions from the last seven local days.
+                  Reading saved review logs from IndexedDB.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {!statistics.hasRecentActivity ? (
-                  <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-background/72 p-5 text-sm leading-6 text-muted-foreground">
-                    No saved reviews landed in this seven-day window yet. Older
-                    history still exists on this device.
-                  </div>
-                ) : null}
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <RatingTile
-                    rating="again"
-                    count={distribution.again}
-                    distribution={distribution}
-                  />
-                  <RatingTile
-                    rating="hard"
-                    count={distribution.hard}
-                    distribution={distribution}
-                  />
-                  <RatingTile
-                    rating="good"
-                    count={distribution.good}
-                    distribution={distribution}
-                  />
-                  <RatingTile
-                    rating="easy"
-                    count={distribution.easy}
-                    distribution={distribution}
-                  />
+              <CardContent>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
+                  Gathering the latest local activity snapshot.
                 </div>
               </CardContent>
             </Card>
+          ) : statistics && !statistics.hasAnyReviewHistory ? (
+            <EmptyStatisticsState />
+          ) : statistics ? (
+            <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Window
+                  </p>
+                  <p className="mt-2 text-xl font-semibold">Last 7 local days</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Includes today and follows the device local date boundary.
+                  </p>
+                </div>
 
+                <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Today starts
+                  </p>
+                  <p className="mt-2 text-base font-semibold">
+                    {formatTimestamp(statistics.todayStart)}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Midnight in the current local timezone.
+                  </p>
+                </div>
+
+                <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Saved history
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {statistics.totalReviewHistoryCount}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Total review events stored locally.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm leading-6 text-muted-foreground">
+                Every number on this screen comes from saved `reviewLogs`.
+                Nothing is sent to a server, and the page intentionally keeps its
+                claims narrower than the stored data itself.
+              </div>
+
+              <section className="space-y-4">
+                <SectionHeading
+                  title="Recent activity"
+                  description="A clear snapshot of what you actually studied on this device, with the quiet periods left visible instead of hidden."
+                />
+
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <MetricTile
+                    label="Reviews today"
+                    value={statistics.reviewsCompletedToday}
+                    detail="Saved rating actions completed since local midnight."
+                  />
+                  <MetricTile
+                    label="Cards studied today"
+                    value={statistics.cardsStudiedToday}
+                    detail="Distinct cards touched by today's saved reviews."
+                  />
+                  <MetricTile
+                    label="Reviews in last 7 days"
+                    value={statistics.reviewsCompletedLast7Days}
+                    detail="Saved review events in the recent local window."
+                  />
+                  <MetricTile
+                    label="Active decks in last 7 days"
+                    value={statistics.activeDeckCountLast7Days}
+                    detail="Decks with at least one saved review in the recent window."
+                  />
+                </div>
+              </section>
+
+              {!statistics.hasRecentActivity ? <RecentWindowQuietState /> : null}
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Rating distribution</CardTitle>
+                  <CardDescription>
+                    Saved rating actions from the last seven local days.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {!statistics.hasRecentActivity ? (
+                    <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-background/72 p-5 text-sm leading-6 text-muted-foreground">
+                      No saved reviews landed in this seven-day window yet. Older
+                      history still exists on this device.
+                    </div>
+                  ) : null}
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <RatingTile
+                      rating="again"
+                      count={distribution.again}
+                      distribution={distribution}
+                    />
+                    <RatingTile
+                      rating="hard"
+                      count={distribution.hard}
+                      distribution={distribution}
+                    />
+                    <RatingTile
+                      rating="good"
+                      count={distribution.good}
+                      distribution={distribution}
+                    />
+                    <RatingTile
+                      rating="easy"
+                      count={distribution.easy}
+                      distribution={distribution}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
+        </>
+      }
+      detail={
+        <div className="space-y-6">
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle>Window rules</CardTitle>
+              <CardDescription>
+                Keep the definitions explicit so the metrics stay trustworthy when
+                activity is high, low, or quiet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+              <WindowRule
+                icon={<Clock3 className="h-4 w-4" />}
+                title="Today"
+                description="Counts review logs with `reviewedAt` between local midnight and the next local midnight."
+              />
+              <WindowRule
+                icon={<History className="h-4 w-4" />}
+                title="Last 7 days"
+                description="Uses the last seven local calendar days, including today."
+              />
+              <WindowRule
+                icon={<PieChart className="h-4 w-4" />}
+                title="Rating mix"
+                description="Shows activity by saved rating action, not any inferred learning outcome."
+              />
+            </CardContent>
+          </Card>
+
+          {statistics && statistics.hasAnyReviewHistory ? (
             <Card>
               <CardHeader>
                 <CardTitle>Most active decks</CardTitle>
@@ -619,9 +616,10 @@ export function StatisticsPage() {
                 )}
               </CardContent>
             </Card>
-          </section>
-        </>
-      ) : null}
-    </div>
+          ) : null}
+        </div>
+      }
+      layout="detail"
+    />
   )
 }

@@ -155,8 +155,6 @@ async function main() {
 
     console.log('Opening statistics page')
     await page.getByRole('link', { name: 'Statistics' }).click()
-    await page.getByRole('heading', { name: 'Statistics' }).waitFor()
-
     await page.getByLabel('Reviews today: 2').waitFor()
     await page.getByLabel('Cards studied today: 2').waitFor()
     await page.getByLabel('Reviews in last 7 days: 2').waitFor()

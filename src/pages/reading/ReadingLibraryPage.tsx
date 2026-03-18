@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { PageIntro, PageScaffold } from '@/app/shell/PageScaffold'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -531,46 +532,66 @@ export function ReadingLibraryPage() {
   const hasDocuments = documents.length > 0
 
   return (
-    <div className="space-y-6">
-      {!isLoading && !error && hasDocuments ? (
-        <ReadingDocumentsSection documents={documents} />
-      ) : null}
-
-      <section className="grid items-start gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <ReadingLibraryIntro
-          documentCount={documents.length}
-          hasDocuments={hasDocuments}
-          isLoading={isLoading}
+    <PageScaffold
+      header={
+        <PageIntro
+          eyebrow="Reading"
+          title="Keep reading notes close to the rest of your study flow."
+          description="Paste an article, transcript, or chapter excerpt, then reopen it later and continue from the last saved spot on this device. This extra stays nearby without replacing deck-first review."
+          badges={
+            <>
+              <Badge variant="accent">Reading hub</Badge>
+              <Badge variant="outline">Reading tools</Badge>
+              <Badge variant="outline">Local-first library</Badge>
+            </>
+          }
         />
-        <ReadingCreationForm
-          bodyText={bodyText}
-          error={error}
-          isSaving={isSaving}
-          title={title}
-          onBodyTextChange={setBodyText}
-          onSubmit={handleSubmit}
-          onTitleChange={setTitle}
-        />
-      </section>
+      }
+      list={
+        <>
+          {!isLoading && !error && hasDocuments ? (
+            <ReadingDocumentsSection documents={documents} />
+          ) : null}
 
-      {isLoading ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Loading reading library</CardTitle>
-            <CardDescription>
-              Reading the latest local documents from IndexedDB.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
-              Gathering the latest saved notes and resume points.
-            </div>
-          </CardContent>
-        </Card>
-      ) : !error && !hasDocuments ? (
-        <ReadingEmptyState />
-      ) : null}
-    </div>
+          {isLoading ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Loading reading library</CardTitle>
+                <CardDescription>
+                  Reading the latest local documents from IndexedDB.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
+                  Gathering the latest saved notes and resume points.
+                </div>
+              </CardContent>
+            </Card>
+          ) : !error && !hasDocuments ? (
+            <ReadingEmptyState />
+          ) : null}
+        </>
+      }
+      detail={
+        <div className="space-y-6">
+          <ReadingLibraryIntro
+            documentCount={documents.length}
+            hasDocuments={hasDocuments}
+            isLoading={isLoading}
+          />
+          <ReadingCreationForm
+            bodyText={bodyText}
+            error={error}
+            isSaving={isSaving}
+            title={title}
+            onBodyTextChange={setBodyText}
+            onSubmit={handleSubmit}
+            onTitleChange={setTitle}
+          />
+        </div>
+      }
+      layout="detail"
+    />
   )
 }

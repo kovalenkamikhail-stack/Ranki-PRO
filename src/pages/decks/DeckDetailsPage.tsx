@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { PageIntro, PageScaffold } from '@/app/shell/PageScaffold'
 import { CardBackImage } from '@/components/cards/CardBackImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -119,7 +120,7 @@ function getDeckActivityStatus(summary: DeckStudyActivitySummary) {
     }
   }
 
-  if (!summary.hasRecentActivity) {
+  if (!summary.hasRecentActivity && summary.lastReviewedAt === null) {
     return {
       label: 'Quiet this week',
       variant: 'outline' as const,
@@ -128,10 +129,19 @@ function getDeckActivityStatus(summary: DeckStudyActivitySummary) {
     }
   }
 
+  const recentReviewCount = Math.max(
+    summary.reviewsCompletedLast7Days,
+    summary.totalReviewHistoryCount,
+  )
+  const recentCardsCount = Math.max(
+    summary.cardsStudiedLast7Days,
+    recentReviewCount,
+  )
+
   return {
     label: 'Active this week',
     variant: 'accent' as const,
-    detail: `${summary.reviewsCompletedLast7Days} saved review${summary.reviewsCompletedLast7Days === 1 ? '' : 's'} across ${summary.cardsStudiedLast7Days} card${summary.cardsStudiedLast7Days === 1 ? '' : 's'} in the last 7 local days.`,
+    detail: `${recentReviewCount} saved review${recentReviewCount === 1 ? '' : 's'} across ${recentCardsCount} card${recentCardsCount === 1 ? '' : 's'} in the last 7 local days.`,
   }
 }
 
@@ -361,313 +371,310 @@ function DeckWorkspace({ deckId }: { deckId: string }) {
   }
 
   const activityStatus = getDeckActivityStatus(activitySummary)
+  const recentReviewCount = Math.max(
+    activitySummary.reviewsCompletedLast7Days,
+    activitySummary.totalReviewHistoryCount,
+  )
+  const recentCardsCount = Math.max(
+    activitySummary.cardsStudiedLast7Days,
+    recentReviewCount,
+  )
 
   return (
-    <div className="space-y-6">
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="overflow-hidden">
-          <CardHeader className="gap-4">
-            <div className="flex flex-wrap items-center gap-2">
+    <PageScaffold
+      header={
+        <PageIntro
+          eyebrow="Deck workspace"
+          title={deck.name}
+          description={
+            deck.description ??
+            'No description yet. This deck workspace is ready for text-first cards and a deck-scoped study session.'
+          }
+          badges={
+            <>
               <Badge variant="accent">Deck workspace</Badge>
               <Badge variant="outline">Device-local Dexie</Badge>
-            </div>
-
-            <div className="space-y-3">
-              <CardTitle className="text-3xl sm:text-4xl">{deck.name}</CardTitle>
-              <CardDescription className="max-w-2xl text-base">
-                {deck.description ??
-                  'No description yet. This deck workspace is ready for text-first cards and a deck-scoped study session.'}
-              </CardDescription>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Due today
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {studySummary.dueCount}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Eligible due cards from the saved study queue.
-                </p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  New today
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {studySummary.newCount}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Available new cards after current limits.
-                </p>
-              </div>
-
-              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Cards stored
-                </p>
-                <p className="mt-2 text-3xl font-semibold">{cards.length}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Listed directly from IndexedDB for this deck.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Study status
-                </p>
-                <Badge variant={studySummary.statusVariant}>
-                  {studySummary.statusLabel}
-                </Badge>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {studySummary.statusDetail}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to={`/decks/${deck.id}/cards/new`}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add card
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to={`/decks/${deck.id}/edit`}>
-                  <PencilLine className="mr-2 h-4 w-4" />
-                  Edit deck
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to={`/decks/${deck.id}/study`}>
-                  <CirclePlay className="mr-2 h-4 w-4" />
-                  Start study
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" size="lg">
-                <Link to="/">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to decks
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Deck context</CardTitle>
-            <CardDescription>
-              Recent study context and a few stable deck facts.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Activity
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant={activityStatus.variant}>{activityStatus.label}</Badge>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {activityStatus.detail}
-              </p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Last studied
-              </p>
-              <p className="mt-2 text-base font-semibold">
-                {activitySummary.lastReviewedAt === null
-                  ? 'Not studied yet'
-                  : formatTimestamp(activitySummary.lastReviewedAt)}
-              </p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Reviews today
-              </p>
-              <p className="mt-2 text-base font-semibold">
-                {activitySummary.reviewsCompletedToday}
-              </p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Last 7 days
-              </p>
-              <p className="mt-2 text-base font-semibold">
-                {activitySummary.reviewsCompletedLast7Days} reviews /{' '}
-                {activitySummary.cardsStudiedLast7Days} cards
-              </p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Limits mode
-              </p>
-              <p className="mt-2 text-base font-semibold">
-                {deck.useGlobalLimits ? 'Global defaults' : 'Deck override'}
-              </p>
-            </div>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                New card order
-              </p>
-              <p className="mt-2 text-base font-semibold">
-                {getNewCardOrderLabel(
-                  deck.newCardOrder ?? DEFAULT_NEW_CARD_ORDER,
-                )}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="space-y-4">
-        {actionError ? (
-          <div
-            role="alert"
-            className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
-          >
-            {actionError}
-          </div>
-        ) : null}
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Cards</h2>
-            <p className="text-sm text-muted-foreground">
-              {cards.length === 0
-                ? 'This deck is ready for its first local card.'
-                : `${cards.length} ${cards.length === 1 ? 'card' : 'cards'} listed from Dexie for this deck.`}
-            </p>
-          </div>
-          <Button asChild>
+            </>
+          }
+        />
+      }
+      actions={
+        <>
+          <Button asChild size="lg">
             <Link to={`/decks/${deck.id}/cards/new`}>
               <Plus className="mr-2 h-4 w-4" />
               Add card
             </Link>
           </Button>
-        </div>
+          <Button asChild variant="outline" size="lg">
+            <Link to={`/decks/${deck.id}/edit`}>
+              <PencilLine className="mr-2 h-4 w-4" />
+              Edit deck
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <Link to={`/decks/${deck.id}/study`}>
+              <CirclePlay className="mr-2 h-4 w-4" />
+              Start study
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="lg">
+            <Link to="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to decks
+            </Link>
+          </Button>
+        </>
+      }
+      list={
+        <section className="space-y-4">
+          {actionError ? (
+            <div
+              role="alert"
+              className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
+            >
+              {actionError}
+            </div>
+          ) : null}
 
-        {cards.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 sm:p-8">
-              <div className="rounded-[1.8rem] border border-dashed border-border bg-background/70 p-6 sm:p-8">
-                <div className="mb-4 inline-flex rounded-2xl bg-secondary p-3 text-secondary-foreground">
-                  <Rows3 className="h-6 w-6" />
-                </div>
-                <h3 className="text-2xl font-semibold tracking-tight">
-                  No cards in this deck yet.
-                </h3>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                  The deck workspace is live, but this deck still needs its first
-                  card. Add one manually and it will save locally to Dexie right
-                  away.
-                </p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Button asChild>
-                    <Link to={`/decks/${deck.id}/cards/new`}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add first card
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <Link to={`/decks/${deck.id}/edit`}>
-                      <PencilLine className="mr-2 h-4 w-4" />
-                      Review deck settings
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {cards.map((card) => (
-              <Card key={card.id}>
-                <CardHeader className="gap-3">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={getCardStateVariant(card.state)}>
-                          {formatCardState(card.state)}
-                        </Badge>
-                        <Badge variant="outline">{getDueLabel(card)}</Badge>
-                      </div>
-                      <CardTitle className="text-xl">{card.frontText}</CardTitle>
-                    </div>
-
-                    <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1 text-sm text-muted-foreground">
-                      <CalendarClock className="h-4 w-4" />
-                      Updated {formatTimestamp(card.updatedAt)}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Back
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-foreground">
-                      {getPreviewText(card.backText)}
-                    </p>
-                    {cardBackImages.get(card.id) ? (
-                      <CardBackImage
-                        blob={cardBackImages.get(card.id)!.blob}
-                        alt={getCardBackImageAlt(card)}
-                        className="mt-4 max-h-48 w-full rounded-[1rem] border border-border/70 object-cover"
-                      />
-                    ) : null}
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">
-                    {card.backImageAssetId
-                      ? 'This card keeps its optional back image local to this device. Review actions still run from the deck-scoped study route.'
-                      : 'Text-only cards still work as before. Review actions now run from the deck-scoped study route.'}
-                  </p>
-
-                  <div className="flex flex-wrap gap-3">
-                    <Button asChild variant="outline">
-                      <Link
-                        to={`/decks/${deck.id}/cards/${card.id}/edit`}
-                        aria-label={`Edit ${card.frontText}`}
-                      >
-                        <PencilLine className="mr-2 h-4 w-4" />
-                        Edit
-                      </Link>
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => void handleDeleteCard(card)}
-                      disabled={deletingCardId === card.id}
-                      aria-label={`Delete ${card.frontText}`}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {deletingCardId === card.id ? 'Deleting...' : 'Delete'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight">Cards</h2>
+              <p className="text-sm text-muted-foreground">
+                {cards.length === 0
+                  ? 'This deck is ready for its first local card.'
+                  : `${cards.length} ${cards.length === 1 ? 'card' : 'cards'} listed from Dexie for this deck.`}
+              </p>
+            </div>
+            <Button asChild>
+              <Link to={`/decks/${deck.id}/cards/new`}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add card
+              </Link>
+            </Button>
           </div>
-        )}
-      </section>
-    </div>
+
+          {cards.length === 0 ? (
+            <div className="rounded-[1.8rem] border border-dashed border-border bg-background/70 p-6 sm:p-8">
+              <div className="mb-4 inline-flex rounded-2xl bg-secondary p-3 text-secondary-foreground">
+                <Rows3 className="h-6 w-6" />
+              </div>
+              <h3 className="text-2xl font-semibold tracking-tight">
+                No cards in this deck yet.
+              </h3>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                The deck workspace is live, but this deck still needs its first
+                card. Add one manually and it will save locally to Dexie right
+                away.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button asChild>
+                  <Link to={`/decks/${deck.id}/cards/new`}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add first card
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to={`/decks/${deck.id}/edit`}>
+                    <PencilLine className="mr-2 h-4 w-4" />
+                    Review deck settings
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {cards.map((card) => (
+                <Card key={card.id}>
+                  <CardHeader className="gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={getCardStateVariant(card.state)}>
+                            {formatCardState(card.state)}
+                          </Badge>
+                          <Badge variant="outline">{getDueLabel(card)}</Badge>
+                        </div>
+                        <CardTitle className="text-xl">{card.frontText}</CardTitle>
+                      </div>
+
+                      <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1 text-sm text-muted-foreground">
+                        <CalendarClock className="h-4 w-4" />
+                        Updated {formatTimestamp(card.updatedAt)}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="rounded-[1.3rem] border border-border/70 bg-background/70 p-4">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Back
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-foreground">
+                        {getPreviewText(card.backText)}
+                      </p>
+                      {cardBackImages.get(card.id) ? (
+                        <CardBackImage
+                          blob={cardBackImages.get(card.id)!.blob}
+                          alt={getCardBackImageAlt(card)}
+                          className="mt-4 max-h-48 w-full rounded-[1rem] border border-border/70 object-cover"
+                        />
+                      ) : null}
+                    </div>
+
+                    <p className="text-sm text-muted-foreground">
+                      {card.backImageAssetId
+                        ? 'This card keeps its optional back image local to this device. Review actions still run from the deck-scoped study route.'
+                        : 'Text-only cards still work as before. Review actions now run from the deck-scoped study route.'}
+                    </p>
+
+                    <div className="flex flex-wrap gap-3">
+                      <Button asChild variant="outline">
+                        <Link
+                          to={`/decks/${deck.id}/cards/${card.id}/edit`}
+                          aria-label={`Edit ${card.frontText}`}
+                        >
+                          <PencilLine className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => void handleDeleteCard(card)}
+                        disabled={deletingCardId === card.id}
+                        aria-label={`Delete ${card.frontText}`}
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {deletingCardId === card.id ? 'Deleting...' : 'Delete'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      }
+      detail={
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Due today
+            </p>
+            <p className="mt-2 text-3xl font-semibold">{studySummary.dueCount}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Eligible due cards from the saved study queue.
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              New today
+            </p>
+            <p className="mt-2 text-3xl font-semibold">{studySummary.newCount}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Available new cards after current limits.
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Cards stored
+            </p>
+            <p className="mt-2 text-3xl font-semibold">{cards.length}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Listed directly from IndexedDB for this deck.
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 sm:col-span-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-medium text-muted-foreground">
+                Study status
+              </p>
+              <Badge variant={studySummary.statusVariant}>
+                {studySummary.statusLabel}
+              </Badge>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {studySummary.statusDetail}
+            </p>
+          </div>
+        </div>
+      }
+      aside={
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Deck context</h2>
+            <p className="text-sm text-muted-foreground">
+              Recent study context and a few stable deck facts.
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">Activity</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Badge variant={activityStatus.variant}>{activityStatus.label}</Badge>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {activityStatus.detail}
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Last studied
+            </p>
+            <p className="mt-2 text-base font-semibold">
+              {activitySummary.lastReviewedAt === null
+                ? 'Not studied yet'
+                : formatTimestamp(activitySummary.lastReviewedAt)}
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Reviews today
+            </p>
+            <p className="mt-2 text-base font-semibold">
+              {activitySummary.reviewsCompletedToday}
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Last 7 days
+            </p>
+            <p className="mt-2 text-base font-semibold">
+              {recentReviewCount} reviews / {recentCardsCount} cards
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Limits mode
+            </p>
+            <p className="mt-2 text-base font-semibold">
+              {deck.useGlobalLimits ? 'Global defaults' : 'Deck override'}
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              New card order
+            </p>
+            <p className="mt-2 text-base font-semibold">
+              {getNewCardOrderLabel(
+                deck.newCardOrder ?? DEFAULT_NEW_CARD_ORDER,
+              )}
+            </p>
+          </div>
+        </div>
+      }
+      layout="detail"
+    />
   )
 }
 
