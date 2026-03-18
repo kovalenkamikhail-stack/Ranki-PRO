@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PageIntro, PageScaffold } from '@/app/shell/PageScaffold'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -169,158 +170,169 @@ export function SettingsPage() {
           : 'Checking...'
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="accent">Core MVP</Badge>
-            <Badge variant="outline">Deck-first settings</Badge>
-          </div>
-          <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
-            <SlidersHorizontal className="h-6 w-6" />
-          </div>
-          <CardTitle>Global study limits</CardTitle>
-          <CardDescription>
-            Edit the Dexie-backed limits that the deck-scoped study session
-            already reads on load.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {settingsError ? (
-            <div
-              role="alert"
-              className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
-            >
-              {settingsError}
-            </div>
-          ) : null}
-
-          {successMessage ? (
-            <div className="rounded-[1.4rem] border border-primary/30 bg-primary/8 p-5 text-sm text-primary">
-              {successMessage}
-            </div>
-          ) : null}
-
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <label className="block text-sm font-medium text-foreground">
-              Global new cards per day
-              <input
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                value={globalNewCardsPerDay}
-                onChange={(event) => setGlobalNewCardsPerDay(event.target.value)}
-                className={inputClassName}
-              />
-            </label>
-
-            <label className="flex items-start gap-3 rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm font-medium text-foreground">
-              <input
-                type="checkbox"
-                checked={isUnlimitedMaxReviews}
-                onChange={(event) =>
-                  setIsUnlimitedMaxReviews(event.target.checked)
-                }
-                aria-label="Unlimited global max reviews per day"
-                className="mt-1 h-4 w-4 rounded border-input"
-              />
-              <span>
-                Unlimited global max reviews per day
-                <span className="mt-1 block text-sm font-normal leading-6 text-muted-foreground">
-                  Leave due reviews uncapped for every deck that still uses
-                  global defaults.
-                </span>
-              </span>
-            </label>
-
-            <label className="block text-sm font-medium text-foreground">
-              Global max reviews per day
-              <input
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                value={globalMaxReviewsPerDay}
-                onChange={(event) =>
-                  setGlobalMaxReviewsPerDay(event.target.value)
-                }
-                disabled={isUnlimitedMaxReviews}
-                className={inputClassName}
-              />
-            </label>
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
-              These values apply immediately to the existing study-session seam.
-              Deck-level overrides are configured from the deck editor.
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button type="submit" size="lg" disabled={isSaving}>
-                <Save className="mr-2 h-4 w-4" />
-                {isSaving ? 'Saving settings...' : 'Save settings'}
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to="/">Back to decks</Link>
-              </Button>
-            </div>
-          </form>
-
-          <dl className="grid gap-3">
-            <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
-              <dt className="text-sm text-muted-foreground">
-                Global new cards per day
-              </dt>
-              <dd className="text-lg font-semibold">
-                {settings?.globalNewCardsPerDay ?? '...'}
-              </dd>
-            </div>
-
-            <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
-              <dt className="text-sm text-muted-foreground">
-                Global max reviews per day
-              </dt>
-              <dd className="text-lg font-semibold">
-                {settings?.globalMaxReviewsPerDay ?? 'Unlimited'}
-              </dd>
-            </div>
-
-            <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
-              <dt className="text-sm text-muted-foreground">Storage mode</dt>
-              <dd className="text-lg font-semibold">Device-local only</dd>
-            </div>
-
-            <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
-              <dt className="text-sm text-muted-foreground">
-                Storage durability
-              </dt>
-              <dd className="text-lg font-semibold">
-                {storageStatus === 'granted'
-                  ? 'Persistent'
-                  : storageStatus === 'best-effort'
-                    ? 'Best-effort'
-                    : storageStatus === 'unsupported'
-                      ? 'Unsupported'
-                      : '...'}
-              </dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-6">
+    <PageScaffold
+      header={
+        <PageIntro
+          eyebrow="Settings"
+          title="Global study defaults and local install guidance"
+          description="Adjust the Dexie-backed limits that the deck-scoped study session reads on load, then keep the offline expectations honest across desktop and iPhone PWA."
+          badges={
+            <>
+              <Badge variant="accent">Core MVP</Badge>
+              <Badge variant="outline">Deck-first settings</Badge>
+            </>
+          }
+        />
+      }
+      list={
         <Card>
           <CardHeader>
             <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
-              <Download className="h-6 w-6" />
+              <SlidersHorizontal className="h-6 w-6" />
             </div>
-            <CardTitle>Install and offline use</CardTitle>
+            <CardTitle>Global study limits</CardTitle>
             <CardDescription>
-              Practical PWA guidance for desktop browsers and iPhone, plus an
-              honest reminder of what stays local.
+              Edit the Dexie-backed limits that the deck-scoped study session
+              already reads on load.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {settingsError ? (
+              <div
+                role="alert"
+                className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-5 text-sm text-destructive"
+              >
+                {settingsError}
+              </div>
+            ) : null}
+
+            {successMessage ? (
+              <div className="rounded-[1.4rem] border border-primary/30 bg-primary/8 p-5 text-sm text-primary">
+                {successMessage}
+              </div>
+            ) : null}
+
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              <label className="block text-sm font-medium text-foreground">
+                Global new cards per day
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  inputMode="numeric"
+                  value={globalNewCardsPerDay}
+                  onChange={(event) => setGlobalNewCardsPerDay(event.target.value)}
+                  className={inputClassName}
+                />
+              </label>
+
+              <label className="flex items-start gap-3 rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm font-medium text-foreground">
+                <input
+                  type="checkbox"
+                  checked={isUnlimitedMaxReviews}
+                  onChange={(event) =>
+                    setIsUnlimitedMaxReviews(event.target.checked)
+                  }
+                  aria-label="Unlimited global max reviews per day"
+                  className="mt-1 h-4 w-4 rounded border-input"
+                />
+                <span>
+                  Unlimited global max reviews per day
+                  <span className="mt-1 block text-sm font-normal leading-6 text-muted-foreground">
+                    Leave due reviews uncapped for every deck that still uses
+                    global defaults.
+                  </span>
+                </span>
+              </label>
+
+              <label className="block text-sm font-medium text-foreground">
+                Global max reviews per day
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  inputMode="numeric"
+                  value={globalMaxReviewsPerDay}
+                  onChange={(event) =>
+                    setGlobalMaxReviewsPerDay(event.target.value)
+                  }
+                  disabled={isUnlimitedMaxReviews}
+                  className={inputClassName}
+                />
+              </label>
+
+              <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
+                These values apply immediately to the existing study-session seam.
+                Deck-level overrides are configured from the deck editor.
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit" size="lg" disabled={isSaving}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? 'Saving settings...' : 'Save settings'}
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link to="/">Back to decks</Link>
+                </Button>
+              </div>
+            </form>
+
+            <dl className="grid gap-3">
+              <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
+                <dt className="text-sm text-muted-foreground">
+                  Global new cards per day
+                </dt>
+                <dd className="text-lg font-semibold">
+                  {settings?.globalNewCardsPerDay ?? '...'}
+                </dd>
+              </div>
+
+              <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
+                <dt className="text-sm text-muted-foreground">
+                  Global max reviews per day
+                </dt>
+                <dd className="text-lg font-semibold">
+                  {settings?.globalMaxReviewsPerDay ?? 'Unlimited'}
+                </dd>
+              </div>
+
+              <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
+                <dt className="text-sm text-muted-foreground">Storage mode</dt>
+                <dd className="text-lg font-semibold">Device-local only</dd>
+              </div>
+
+              <div className="flex items-center justify-between rounded-[1.4rem] border border-border/70 bg-background/70 px-4 py-4">
+                <dt className="text-sm text-muted-foreground">
+                  Storage durability
+                </dt>
+                <dd className="text-lg font-semibold">
+                  {storageStatus === 'granted'
+                    ? 'Persistent'
+                    : storageStatus === 'best-effort'
+                      ? 'Best-effort'
+                      : storageStatus === 'unsupported'
+                        ? 'Unsupported'
+                        : '...'}
+                </dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+      }
+      detail={
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
+                <Download className="h-6 w-6" />
+              </div>
+              <CardTitle>Install and offline use</CardTitle>
+              <CardDescription>
+                Practical PWA guidance for desktop browsers and iPhone, plus an
+                honest reminder of what stays local.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
             <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
               <div className="flex items-start gap-3">
                 <Download className="mt-0.5 h-4 w-4 flex-none text-primary" />
@@ -387,27 +399,27 @@ export function SettingsPage() {
               reset, local Ranki data can be lost because this MVP does not have
               backup or sync yet.
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
-              <Upload className="h-6 w-6" />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="accent">Optional extra</Badge>
-              <Badge variant="outline">Local migration utility</Badge>
-            </div>
-            <CardTitle>Import Anki package preview</CardTitle>
-            <CardDescription>
-              Load a local `.apkg` deck into Ranki when you need extra card
-              volume on this device. Decks, manual cards, and deck-scoped study
-              still define the MVP core flow, and this utility stays outside the
-              core product scope.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
+          <Card>
+            <CardHeader>
+              <div className="mb-3 inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
+                <Upload className="h-6 w-6" />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="accent">Optional extra</Badge>
+                <Badge variant="outline">Local migration utility</Badge>
+              </div>
+              <CardTitle>Import Anki package preview</CardTitle>
+              <CardDescription>
+                Load a local `.apkg` deck into Ranki when you need extra card
+                volume on this device. Decks, manual cards, and deck-scoped study
+                still define the MVP core flow, and this utility stays outside the
+                core product scope.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
             {importError ? (
               <div
                 role="alert"
@@ -494,9 +506,11 @@ export function SettingsPage() {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+      layout="detail"
+    />
   )
 }

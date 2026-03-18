@@ -150,7 +150,11 @@ async function main() {
     await page.waitForTimeout(450)
     console.log('Returning to reading library')
     await page.getByRole('link', { name: 'Back to reading library' }).click()
-    await page.getByRole('heading', { name: 'Reading Library' }).waitFor()
+    await page
+      .getByRole('link', {
+        name: 'Resume reading Reading foundation note',
+      })
+      .waitFor()
     await page.getByText('Resume 50%').waitFor()
     await page.screenshot({ path: join(outputDir, 'reading-library.png') })
 
