@@ -120,6 +120,15 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - One implementation slice should usually be completable in one focused pass and safe to commit independently.
 - Do not work on multiple implementation slices in parallel.
 - Preferred loop: `task_planner` -> `worker` -> `reviewer` -> `shipper` -> `monitor`.
+- Default completion rule for a code-change slice is:
+  - make the change locally
+  - run the relevant checks and review
+  - commit it on a `codex/*` branch
+  - push that branch to `origin` on GitHub
+  - wait for the PR path to land in `origin/main`
+  - sync the local `main` checkout back to `origin/main`
+- Do not treat local edits or a local commit as completion by themselves.
+- Do not stop after pushing the feature branch; the slice remains open until the local `main` checkout has been reconciled after merge.
 - After a slice is implemented, run the relevant checks, review it, create or switch to a `codex/<slice-name>` branch, stage only that slice, commit it, push the branch, and only then move to the next slice.
 - `shipper` is responsible only for branch/commit/push.
 - `monitor` or the parent agent is responsible for waiting on PR creation, status checks, auto-merge, merge completion, and returning the local checkout to `main`.
@@ -142,6 +151,7 @@ Avoid introducing Next.js, server rendering, or backend services in MVP unless t
 - If the preferred `codex/<slice-name>` branch already exists locally or on `origin`, create a new unique branch by appending a short suffix instead of reusing the old branch.
 - Before pushing, compare the branch against `origin/main`; if files outside the current slice appear in the diff, stop and fix the branch hygiene before shipping.
 - Push feature branches to `origin`; GitHub automation will create or update the PR into `main`.
+- Synchronize the local `main` checkout only after the feature branch has landed in `origin/main`; do not treat a pushed but unmerged feature branch as a reason to rewrite local `main`.
 - `main` should move through GitHub PR auto-merge after checks, not through direct feature pushes.
 - Direct pushes to `main` are reserved for repository administration tasks only and require explicit parent instruction.
 - After a feature PR merges, the parent or `monitor` should return the local checkout to `main` and fast-forward it to `origin/main`.
