@@ -75,6 +75,33 @@ describe('SettingsPage', () => {
     })
   })
 
+  it('discards unsaved study-limit edits back to the persisted values', async () => {
+    renderSettingsPage()
+
+    expect(await screen.findByDisplayValue('10')).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Unlimited global max reviews per day'),
+    ).toBeChecked()
+
+    fireEvent.change(screen.getByLabelText('Global new cards per day'), {
+      target: { value: '7' },
+    })
+    fireEvent.click(
+      screen.getByLabelText('Unlimited global max reviews per day'),
+    )
+    fireEvent.change(screen.getByLabelText('Global max reviews per day'), {
+      target: { value: '40' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+
+    expect(screen.getByLabelText('Global new cards per day')).toHaveValue(10)
+    expect(
+      screen.getByLabelText('Unlimited global max reviews per day'),
+    ).toBeChecked()
+    expect(screen.getByLabelText('Global max reviews per day')).toHaveValue(null)
+  })
+
   it('shows practical install guidance and local-only expectations in settings', async () => {
     ensureStoragePersistenceMock.mockResolvedValue('best-effort')
 

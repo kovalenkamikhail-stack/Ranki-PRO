@@ -95,6 +95,22 @@ describe('EditCardPage', () => {
     expect(createCardMock).not.toHaveBeenCalled()
   })
 
+  it('renders the editor as a structured workspace with deck context and separate front/back sections', async () => {
+    getDeckMock.mockResolvedValue({
+      id: 'deck-1',
+      name: 'Spanish',
+      description: 'Travel phrases',
+    })
+
+    renderWithRouter('/decks/deck-1/cards/new', <EditCardPage mode="create" />)
+
+    expect(await screen.findByText('Deck association')).toBeInTheDocument()
+    expect(screen.getByText('Front side')).toBeInTheDocument()
+    expect(screen.getByText('Back side')).toBeInTheDocument()
+    expect(screen.getByText('Save back into the deck')).toBeInTheDocument()
+    expect(screen.getByText('Spanish')).toBeInTheDocument()
+  })
+
   it('creates a card inside the selected deck and returns to deck workspace', async () => {
     getDeckMock.mockResolvedValue({
       id: 'deck-1',

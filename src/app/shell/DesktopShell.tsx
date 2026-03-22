@@ -30,7 +30,7 @@ export function DesktopShell({
                   Ranki
                 </Link>
                 <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-                  Telegram-inspired shell
+                  Deep study workspace
                 </h1>
               </div>
               <Badge
@@ -41,7 +41,8 @@ export function DesktopShell({
               </Badge>
             </div>
             <p className="mt-3 text-sm leading-6 text-primary-foreground/82">
-              Deck-first flashcards with a calmer split workspace for desktop.
+              Deck-first flashcards, local reading tools, and honest offline
+              settings in one calm desktop shell.
             </p>
           </div>
 
