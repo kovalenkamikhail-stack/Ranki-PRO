@@ -7,10 +7,12 @@ const {
   bootstrapAppDbMock,
   createReadingDocumentMock,
   listReadingDocumentsMock,
+  listBooksMock,
 } = vi.hoisted(() => ({
   bootstrapAppDbMock: vi.fn(),
   createReadingDocumentMock: vi.fn(),
   listReadingDocumentsMock: vi.fn(),
+  listBooksMock: vi.fn(),
 }))
 
 vi.mock('@/db/bootstrap', () => ({
@@ -20,6 +22,10 @@ vi.mock('@/db/bootstrap', () => ({
 vi.mock('@/db/reading-documents', () => ({
   createReadingDocument: createReadingDocumentMock,
   listReadingDocuments: listReadingDocumentsMock,
+}))
+
+vi.mock('@/db/books', () => ({
+  listBooks: listBooksMock,
 }))
 
 function renderReadingLibraryPage() {
@@ -47,7 +53,9 @@ describe('ReadingLibraryPage', () => {
     bootstrapAppDbMock.mockReset()
     createReadingDocumentMock.mockReset()
     listReadingDocumentsMock.mockReset()
+    listBooksMock.mockReset()
     bootstrapAppDbMock.mockResolvedValue(undefined)
+    listBooksMock.mockResolvedValue([])
   })
 
   it('keeps the empty state hidden while reading documents are still loading', async () => {
@@ -150,5 +158,60 @@ describe('ReadingLibraryPage', () => {
     ).toHaveAttribute('href', '/reading/books')
     expect(screen.getByText(/EPUB, FB2, or MOBI/)).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: 'Back to decks' }).length).toBeGreaterThan(0)
+  })
+
+  it('lets the reading hub switch between saved notes and imported books without collapsing their routes', async () => {
+    listReadingDocumentsMock.mockResolvedValue([
+      {
+        id: 'reading-1',
+        title: 'Phenomenology notes',
+        bodyText: 'Paragraph one.\n\nParagraph two.',
+        sourceKind: 'pasted_text',
+        wordCount: 4,
+        lastOpenedAt: 50,
+        lastReadProgress: 0.35,
+        createdAt: 10,
+        updatedAt: 60,
+      },
+    ])
+    listBooksMock.mockResolvedValue([
+      {
+        id: 'book-1',
+        title: 'Meditations',
+        author: 'Marcus Aurelius',
+        format: 'epub',
+        fileName: 'meditations.epub',
+        sourceBlobRef: 'book-blob',
+        chapterCount: 12,
+        totalWordCount: 42000,
+        lastOpenedAt: 70,
+        lastReadChapterIndex: 2,
+        lastReadProgress: 0.18,
+        createdAt: 10,
+        updatedAt: 70,
+      },
+    ])
+
+    renderReadingLibraryPage()
+
+    expect(await screen.findByRole('button', { name: 'All items' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByText('Phenomenology notes')).toBeInTheDocument()
+    expect(screen.getByText('Meditations')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Imported books' }))
+
+    expect(screen.getByRole('button', { name: 'Imported books' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByText('Meditations')).toBeInTheDocument()
+    expect(screen.queryByText('Phenomenology notes')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Resume book Meditations' })).toHaveAttribute(
+      'href',
+      '/reading/books/book-1',
+    )
   })
 })

@@ -1,7 +1,17 @@
-import { ArrowLeft, BookMarked, Rows3, Save, Trash2 } from 'lucide-react'
-import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, Rows3, Save, Trash2 } from 'lucide-react'
+import {
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { PageIntro, PageScaffold } from '@/app/shell/PageScaffold'
 import { CardBackImage } from '@/components/cards/CardBackImage'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -31,7 +41,7 @@ interface EditCardPageProps {
 }
 
 const inputClassName =
-  'mt-2 w-full rounded-[1.15rem] border border-input bg-background/85 px-4 py-3 text-sm text-foreground shadow-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/40'
+  'mt-2 w-full rounded-[1.35rem] border border-input/80 bg-background/90 px-4 py-3.5 text-sm text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/35'
 
 type BackImageFieldState =
   | { kind: 'none' }
@@ -103,6 +113,33 @@ function EditorUnavailableState({
           </Link>
         </Button>
       </CardContent>
+    </Card>
+  )
+}
+
+function ContextCard({
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  eyebrow: string
+  title: string
+  description?: string
+  children?: ReactNode
+}) {
+  return (
+    <Card className="h-fit">
+      <CardHeader className="gap-3">
+        <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+          {eyebrow}
+        </p>
+        <div className="space-y-2">
+          <CardTitle className="text-xl">{title}</CardTitle>
+          {description ? <CardDescription>{description}</CardDescription> : null}
+        </div>
+      </CardHeader>
+      {children ? <CardContent className="space-y-4">{children}</CardContent> : null}
     </Card>
   )
 }
@@ -439,235 +476,313 @@ export function EditCardPage({ mode }: EditCardPageProps) {
     )
   }
 
+  const quickCaptureHasDraft =
+    mode === 'create' &&
+    hasCaptureQuery &&
+    quickCapture?.errors.length === 0 &&
+    hasQuickCaptureCardDraftContent(quickCapture.payload)
+
   return (
-    <Card className="mx-auto max-w-3xl">
-      <CardHeader className="gap-4">
-        <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.6rem] bg-primary/12 text-primary">
-          <BookMarked className="h-7 w-7" />
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-            Card Editor
-          </p>
-          <CardTitle className="text-3xl">
-            {mode === 'create' ? 'Add a card' : 'Edit card'}
-          </CardTitle>
-          <CardDescription className="text-base">
-            {mode === 'create'
-              ? 'Create a local card with required front/back text and one optional image on the back.'
-              : 'Update the front and back text for this local card and keep, replace, or remove its optional back image.'}
-          </CardDescription>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-          <p className="text-sm font-medium text-muted-foreground">Deck</p>
-          <p className="mt-2 text-base font-semibold">
-            {deck?.name ?? 'Current deck'}
-          </p>
-          {card ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Editing the saved front/back copy and optional back image for this
-              deck-scoped card.
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground">
-              New cards save directly to this deck in Dexie with an optional
-              image stored only on this device.
-            </p>
-          )}
-        </div>
-
-        {saveError ? (
-          <div
-            role="alert"
-            className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive"
-          >
-            {saveError}
-          </div>
-        ) : null}
-
-        {mode === 'create' && hasCaptureQuery && quickCapture?.errors.length ? (
-          <div
-            role="alert"
-            className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive"
-          >
-            <p className="font-medium">Quick capture prefill could not be used.</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {quickCapture.errors.map((captureError) => (
-                <li key={captureError}>{captureError}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {mode === 'create' && hasCaptureQuery && quickCapture?.warnings.length ? (
-          <div className="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/[0.08] p-4 text-sm leading-6 text-foreground">
-            <p className="font-medium">Quick capture adjusted part of the payload.</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {quickCapture.warnings.map((captureWarning) => (
-                <li key={captureWarning}>{captureWarning}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {mode === 'create' &&
-        hasCaptureQuery &&
-        quickCapture?.errors.length === 0 &&
-        hasQuickCaptureCardDraftContent(quickCapture.payload) ? (
-          <div className="rounded-[1.4rem] border border-primary/20 bg-primary/[0.06] p-4 text-sm leading-6 text-foreground">
-            <p className="font-medium">Quick capture draft</p>
-            <p className="mt-2 text-muted-foreground">
-              Any usable front/back text was prefilled from the incoming capture
-              URL. Nothing saves automatically here.
-            </p>
-            {quickCapture.payload.contextText ? (
-              <div className="mt-4 rounded-[1.2rem] border border-border/70 bg-background/80 p-4">
-                <p className="text-sm font-medium text-foreground">
-                  Captured context (not auto-saved)
-                </p>
-                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
-                  {quickCapture.payload.contextText}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <label className="block text-sm font-medium text-foreground">
-            Front text
-            <input
-              value={frontText}
-              onChange={(event) => setFrontText(event.target.value)}
-              className={inputClassName}
-              autoFocus
-            />
-          </label>
-
-          <label className="block text-sm font-medium text-foreground">
-            Back text
-            <textarea
-              value={backText}
-              onChange={(event) => setBackText(event.target.value)}
-              className={`${inputClassName} min-h-40 resize-y`}
-            />
-          </label>
-
-          <div className="rounded-[1.4rem] border border-border/70 bg-background/70 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">
-                  Back image (optional)
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Attach one PNG, JPEG, or WebP image up to 12 MB. Large images
-                  are resized locally before they are saved to this device.
-                </p>
-              </div>
-
-              {backImage.kind !== 'none' ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleRemoveBackImage}
-                  disabled={isProcessingBackImage}
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Remove image
-                </Button>
-              ) : null}
-            </div>
-
-            <label className="mt-4 block text-sm font-medium text-foreground">
-              Choose image
-              <input
-                type="file"
-                accept={BACK_IMAGE_INPUT_ACCEPT}
-                onChange={(event) => void handleBackImageChange(event)}
-                disabled={isProcessingBackImage}
-                className={inputClassName}
-              />
-            </label>
-
-            {isProcessingBackImage ? (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Preparing the selected image locally before save.
-              </p>
-            ) : backImage.kind === 'none' ? (
-              <p className="mt-4 text-sm text-muted-foreground">
-                No back image attached. Text-only cards still work exactly as
-                before.
-              </p>
-            ) : (
-              <div className="mt-4 rounded-[1.3rem] border border-border/70 bg-background/80 p-4">
-                <CardBackImage
-                  blob={backImage.image.blob}
-                  alt={
-                    frontText.trim().length > 0
-                      ? `Back image for ${frontText.trim()}`
-                      : 'Back image preview'
-                  }
-                  className="max-h-64 w-full rounded-[1.1rem] border border-border/70 object-cover"
-                />
-                <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                  <p>
-                    {backImageMeta?.fileName ?? 'Attached image'} ·{' '}
-                    {formatBytes(backImageMeta?.sizeBytes ?? 0)}
-                  </p>
-                  <p>
-                    {backImage.kind === 'draft'
-                      ? 'This optimized image will be saved when you submit the card.'
-                      : 'This image is already saved locally with the card.'}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="submit"
-              size="lg"
-              disabled={isSaving || isProcessingBackImage}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {mode === 'create'
-                ? isSaving
-                  ? 'Creating card...'
-                  : 'Create card'
-                : isSaving
-                  ? 'Saving changes...'
-                  : 'Save changes'}
-            </Button>
-
-            <Button asChild variant="outline" size="lg">
-              <Link to={deckId ? `/decks/${deckId}` : '/'}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {deckId ? 'Back to deck' : 'Back to decks'}
-              </Link>
-            </Button>
-
-            {mode === 'edit' ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="lg"
-                disabled={isDeleting}
-                onClick={() => void handleDelete()}
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+    <form onSubmit={handleSubmit}>
+      <PageScaffold
+        header={
+          <PageIntro
+            eyebrow="Card editor"
+            title={mode === 'create' ? 'Add a card' : 'Edit card'}
+            description={
+              mode === 'create'
+                ? 'Create a local card with required front/back text and one optional image on the back.'
+                : 'Fine-tune the saved front, back, and optional back image without leaving the selected deck.'
+            }
+            badges={
+              <>
+                <Badge variant="accent">Deck-scoped</Badge>
+                <Badge variant="outline">Local-only media</Badge>
+              </>
+            }
+          />
+        }
+        detail={
+          <div className="space-y-5">
+            {saveError ? (
+              <div
+                role="alert"
+                className="rounded-[1.4rem] border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {isDeleting ? 'Deleting...' : 'Delete card'}
-              </Button>
+                {saveError}
+              </div>
             ) : null}
+
+            <Card className="overflow-hidden">
+              <CardHeader className="gap-3">
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                  Front side
+                </p>
+                <div className="space-y-2">
+                  <CardTitle>What should surface first?</CardTitle>
+                  <CardDescription>
+                    Keep the prompt short enough to feel fast during study.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <label className="block text-sm font-medium text-foreground">
+                  Front text
+                  <input
+                    value={frontText}
+                    onChange={(event) => setFrontText(event.target.value)}
+                    className={inputClassName}
+                    autoFocus
+                    placeholder="What is the concept or question?"
+                  />
+                </label>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader className="gap-3">
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                  Back side
+                </p>
+                <div className="space-y-2">
+                  <CardTitle>Answer, explanation, or definition</CardTitle>
+                  <CardDescription>
+                    The answer stays text-first and can keep one optional image.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <label className="block text-sm font-medium text-foreground">
+                  Back text
+                  <textarea
+                    value={backText}
+                    onChange={(event) => setBackText(event.target.value)}
+                    className={`${inputClassName} min-h-44 resize-y`}
+                    placeholder="Detailed explanation, formula, or definition..."
+                  />
+                </label>
+
+                <div className="rounded-[1.5rem] border border-border/70 bg-background/72 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">
+                        Back image (optional)
+                      </p>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        Attach one PNG, JPEG, or WebP image up to 12 MB. Large
+                        images are resized locally before they are saved to this device.
+                      </p>
+                    </div>
+
+                    {backImage.kind !== 'none' ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleRemoveBackImage}
+                        disabled={isProcessingBackImage}
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Remove image
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  <label className="mt-4 block text-sm font-medium text-foreground">
+                    Choose image
+                    <input
+                      type="file"
+                      accept={BACK_IMAGE_INPUT_ACCEPT}
+                      onChange={(event) => void handleBackImageChange(event)}
+                      disabled={isProcessingBackImage}
+                      className={inputClassName}
+                    />
+                  </label>
+
+                  {isProcessingBackImage ? (
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Preparing the selected image locally before save.
+                    </p>
+                  ) : backImage.kind === 'none' ? (
+                    <div className="mt-4 rounded-[1.3rem] border border-dashed border-border/70 bg-background/80 p-4 text-sm leading-6 text-muted-foreground">
+                      No back image attached. Text-only cards still work exactly
+                      as before.
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-[1.3rem] border border-border/70 bg-background/80 p-4">
+                      <CardBackImage
+                        blob={backImage.image.blob}
+                        alt={
+                          frontText.trim().length > 0
+                            ? `Back image for ${frontText.trim()}`
+                            : 'Back image preview'
+                        }
+                        className="max-h-64 w-full rounded-[1.1rem] border border-border/70 object-cover"
+                      />
+                      <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                        <p>
+                          {backImageMeta?.fileName ?? 'Attached image'} ·{' '}
+                          {formatBytes(backImageMeta?.sizeBytes ?? 0)}
+                        </p>
+                        <p>
+                          {backImage.kind === 'draft'
+                            ? 'This optimized image will be saved when you submit the card.'
+                            : 'This image is already saved locally with the card.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        }
+        aside={
+          <div className="space-y-4">
+            <ContextCard
+              eyebrow="Deck association"
+              title={deck?.name ?? 'Current deck'}
+              description={
+                card
+                  ? 'Editing the saved front/back copy and optional back image for this deck-scoped card.'
+                  : 'New cards save directly to this deck in Dexie with optional media stored only on this device.'
+              }
+            >
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">{mode === 'create' ? 'Create mode' : 'Edit mode'}</Badge>
+                <Badge variant="outline">
+                  {backImage.kind === 'none' ? 'Text only' : 'Image attached'}
+                </Badge>
+              </div>
+            </ContextCard>
+
+            {mode === 'create' && hasCaptureQuery && quickCapture?.errors.length ? (
+              <ContextCard
+                eyebrow="Quick capture"
+                title="Quick capture prefill could not be used."
+                description="The incoming capture URL could not produce a usable card draft."
+              >
+                <div
+                  role="alert"
+                  className="rounded-[1.2rem] border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive"
+                >
+                  <ul className="list-disc space-y-1 pl-5">
+                    {quickCapture.errors.map((captureError) => (
+                      <li key={captureError}>{captureError}</li>
+                    ))}
+                  </ul>
+                </div>
+              </ContextCard>
+            ) : null}
+
+            {mode === 'create' && hasCaptureQuery && quickCapture?.warnings.length ? (
+              <ContextCard
+                eyebrow="Quick capture"
+                title="Quick capture adjusted part of the payload."
+                description="Recoverable issues were cleaned up before prefilling the editor."
+              >
+                <div className="rounded-[1.2rem] border border-amber-500/20 bg-amber-500/[0.08] p-4 text-sm leading-6 text-foreground">
+                  <ul className="list-disc space-y-1 pl-5">
+                    {quickCapture.warnings.map((captureWarning) => (
+                      <li key={captureWarning}>{captureWarning}</li>
+                    ))}
+                  </ul>
+                </div>
+              </ContextCard>
+            ) : null}
+
+            {quickCaptureHasDraft && quickCapture ? (
+              <ContextCard
+                eyebrow="Quick capture"
+                title="Quick capture draft"
+                description="Usable front and back text were prefilled, but nothing saves automatically."
+              >
+                {quickCapture.payload.contextText ? (
+                  <div className="rounded-[1.2rem] border border-border/70 bg-background/80 p-4">
+                    <p className="text-sm font-medium text-foreground">
+                      Captured context (not auto-saved)
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
+                      {quickCapture.payload.contextText}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    The payload only included front/back card copy, so there is
+                    no extra reference context to keep alongside this draft.
+                  </p>
+                )}
+              </ContextCard>
+            ) : null}
+
+            <ContextCard
+              eyebrow="Image state"
+              title={
+                isProcessingBackImage
+                  ? 'Preparing image'
+                  : backImage.kind === 'none'
+                    ? 'No image attached'
+                    : backImage.kind === 'draft'
+                      ? 'Ready to save'
+                      : 'Stored on this device'
+              }
+              description={
+                isProcessingBackImage
+                  ? 'The selected file is being resized and normalized before submit.'
+                  : backImage.kind === 'none'
+                    ? 'Text-only cards are still fully supported.'
+                    : `${backImageMeta?.fileName ?? 'Attached image'} · ${formatBytes(backImageMeta?.sizeBytes ?? 0)}`
+              }
+            />
+
+            <ContextCard
+              eyebrow="Actions"
+              title="Save back into the deck"
+              description="All actions here map directly to the real local card flow."
+            >
+              <div className="space-y-3">
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isSaving || isProcessingBackImage}
+                  className="w-full"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {mode === 'create'
+                    ? isSaving
+                      ? 'Creating card...'
+                      : 'Create card'
+                    : isSaving
+                      ? 'Saving changes...'
+                      : 'Save changes'}
+                </Button>
+
+                <Button asChild variant="outline" size="lg" className="w-full">
+                  <Link to={deckId ? `/decks/${deckId}` : '/'}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    {deckId ? 'Back to deck' : 'Back to decks'}
+                  </Link>
+                </Button>
+
+                {mode === 'edit' ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="lg"
+                    disabled={isDeleting}
+                    onClick={() => void handleDelete()}
+                    className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {isDeleting ? 'Deleting...' : 'Delete card'}
+                  </Button>
+                ) : null}
+              </div>
+            </ContextCard>
+          </div>
+        }
+        layout="focus"
+      />
+    </form>
   )
 }

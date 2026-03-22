@@ -29,7 +29,7 @@ export function MobileShell({
                 >
                   Ranki
                 </Link>
-                <Badge variant="accent">Offline-first</Badge>
+                <Badge variant="accent">Local-only</Badge>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
